@@ -1,12 +1,16 @@
 package com.powerhold.app.ui.screens
 
+import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Drawable
+import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,7 +27,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -43,6 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -51,10 +55,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.powerhold.app.data.ActionType
 import com.powerhold.app.data.RemapAction
 import com.powerhold.app.ui.MainViewModel
 import com.powerhold.app.ui.theme.AppIcons
@@ -79,6 +90,29 @@ fun MainDashboardScreen(
 
     var showSearch by remember { mutableStateOf(false) }
     var showAdbDialog by remember { mutableStateOf(false) }
+
+    // Track whether Powerhold is already set as the default assistant
+    var isAssistantSet by remember { mutableStateOf(false) }
+
+    fun checkAssistantRole() {
+        isAssistantSet = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = context.getSystemService(RoleManager::class.java)
+            roleManager?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
+        } else {
+            false
+        }
+    }
+
+    // Check on composition and re-check when app resumes (user may have set it in settings)
+    LaunchedEffect(Unit) { checkAssistantRole() }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) checkAssistantRole()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // Lazy load apps and activities on tab selection
     LaunchedEffect(selectedTab) {
@@ -120,7 +154,7 @@ fun MainDashboardScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Power Button & Gesture Remapper",
+                                text = "Default Assistant Shortcut Remapper",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -141,13 +175,6 @@ fun MainDashboardScreen(
                         Icon(
                             imageVector = AppIcons.Terminal,
                             contentDescription = "ADB Guide",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    IconButton(onClick = onOpenAssistantSettings) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Set Default Assistant",
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -195,7 +222,9 @@ fun MainDashboardScreen(
 
             // Current Active Action Hero Card
             ActiveActionHeroCard(
+                context = context,
                 action = selectedAction,
+                isAssistantSet = isAssistantSet,
                 onTest = { viewModel.testAction(context) },
                 onSetDefault = onOpenAssistantSettings
             )
@@ -251,10 +280,27 @@ fun MainDashboardScreen(
 
 @Composable
 fun ActiveActionHeroCard(
+    context: Context,
     action: RemapAction,
+    isAssistantSet: Boolean,
     onTest: () -> Unit,
     onSetDefault: () -> Unit
 ) {
+    // Resolve icon: app/activity icon drawable, or vector icon for quick toggles
+    val appIconDrawable: Drawable? = remember(action.id) {
+        if (action.type == ActionType.OPEN_APP || action.type == ActionType.LAUNCH_ACTIVITY) {
+            try {
+                action.packageName?.let { context.packageManager.getApplicationIcon(it) }
+            } catch (e: Exception) {
+                null
+            }
+        } else null
+    }
+    val toggleIcon: ImageVector? = remember(action.id) {
+        if (action.type == ActionType.QUICK_TOGGLE) getToggleIcon(action.toggleKey)
+        else null
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -273,18 +319,32 @@ fun ActiveActionHeroCard(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Icon: app icon bitmap OR toggle vector icon
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = AppIcons.Power,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        when {
+                            appIconDrawable != null -> Image(
+                                bitmap = appIconDrawable.toBitmap(96, 96).asImageBitmap(),
+                                contentDescription = action.title,
+                                modifier = Modifier.size(32.dp)
+                            )
+                            toggleIcon != null -> Icon(
+                                imageVector = toggleIcon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            else -> Icon(
+                                imageVector = AppIcons.Power,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
 
@@ -292,7 +352,7 @@ fun ActiveActionHeroCard(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "TRIGGER ACTION (POWER / GESTURE)",
+                        text = "TRIGGER ACTION",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -337,15 +397,17 @@ fun ActiveActionHeroCard(
                     Text("Test Trigger")
                 }
 
-                FilledTonalButton(
-                    onClick = onSetDefault,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    )
-                ) {
-                    Text("Set as Assistant")
+                if (!isAssistantSet) {
+                    FilledTonalButton(
+                        onClick = onSetDefault,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Text("Set as Assistant")
+                    }
                 }
             }
         }

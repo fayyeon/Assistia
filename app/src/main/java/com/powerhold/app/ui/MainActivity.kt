@@ -1,9 +1,7 @@
 package com.powerhold.app.ui
 
 import android.app.role.RoleManager
-import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -32,30 +30,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // Requirement 1: Automatically open "modify system settings" on first launch if not yet granted
-        checkAndRequestWriteSettings()
-
         setContent {
             PowerholdTheme {
                 MainDashboardScreen(
                     viewModel = viewModel,
                     onOpenAssistantSettings = { requestDefaultAssistant() }
                 )
-            }
-        }
-    }
-
-    private fun checkAndRequestWriteSettings() {
-        if (!Settings.System.canWrite(this)) {
-            val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
-                data = Uri.parse("package:$packageName")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            try {
-                startActivity(intent)
-                Toast.makeText(this, "Please enable 'Modify system settings' for Powerhold", Toast.LENGTH_LONG).show()
-            } catch (e: Exception) {
-                // Ignore if device doesn't support the direct package intent
             }
         }
     }
