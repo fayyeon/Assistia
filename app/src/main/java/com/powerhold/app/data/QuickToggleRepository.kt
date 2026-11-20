@@ -141,5 +141,5 @@ object QuickToggleRepository {
             toggleKey = "wifi",
             isNonRootDirect = true
         )
-    ].sortedBy { it.title }
+    ).sortedBy { it.title }
 }

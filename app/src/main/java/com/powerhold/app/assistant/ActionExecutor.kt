@@ -98,7 +98,7 @@ object ActionExecutor {
             )
             "bluetooth" -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    openIntentSafely(context, Intent(Settings.Panel.ACTION_BLUETOOTH))
+                    openIntentSafely(context, Intent("android.settings.panel.action.BLUETOOTH"))
                 } else {
                     openIntentSafely(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
                 }
@@ -106,7 +106,7 @@ object ActionExecutor {
             }
             "wifi" -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    openIntentSafely(context, Intent(Settings.Panel.ACTION_INTERNET))
+                    openIntentSafely(context, Intent("android.settings.panel.action.INTERNET_CONNECTIVITY"))
                 } else {
                     openIntentSafely(context, Intent(Settings.ACTION_WIFI_SETTINGS))
                 }
@@ -114,7 +114,7 @@ object ActionExecutor {
             }
             "mobile_data" -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    openIntentSafely(context, Intent(Settings.Panel.ACTION_INTERNET))
+                    openIntentSafely(context, Intent("android.settings.panel.action.INTERNET_CONNECTIVITY"))
                 } else {
                     openIntentSafely(context, Intent(Settings.ACTION_DATA_ROAMING_SETTINGS))
                 }
@@ -125,7 +125,11 @@ object ActionExecutor {
                 showToast(context, "Airplane Mode settings opened")
             }
             "data_saver" -> {
-                openIntentSafely(context, Intent(Settings.ACTION_DATA_SAVER_SETTINGS))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    openIntentSafely(context, Intent(Settings.ACTION_DATA_SAVER_SETTINGS))
+                } else {
+                    openIntentSafely(context, Intent(Settings.ACTION_SETTINGS))
+                }
                 showToast(context, "Data Saver settings opened")
             }
             "location" -> {
