@@ -125,11 +125,7 @@ object ActionExecutor {
                 showToast(context, "Airplane Mode settings opened")
             }
             "data_saver" -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    openIntentSafely(context, Intent(Settings.ACTION_DATA_SAVER_SETTINGS))
-                } else {
-                    openIntentSafely(context, Intent(Settings.ACTION_SETTINGS))
-                }
+                openIntentSafely(context, Intent("android.settings.DATA_SAVER_SETTINGS"))
                 showToast(context, "Data Saver settings opened")
             }
             "location" -> {
