@@ -42,6 +42,7 @@ import com.powerhold.app.ui.theme.AppIcons
 fun QuickTogglesTab(
     toggles: List<RemapAction>,
     selectedAction: RemapAction,
+    hasAdbPermission: Boolean = false,
     onSelectAction: (RemapAction) -> Unit,
     onTestAction: (RemapAction) -> Unit
 ) {
@@ -70,6 +71,7 @@ fun QuickTogglesTab(
             QuickToggleItemCard(
                 action = action,
                 isSelected = isSelected,
+                hasAdbPermission = hasAdbPermission,
                 onClick = { onSelectAction(action) },
                 onTest = { onTestAction(action) }
             )
@@ -81,10 +83,12 @@ fun QuickTogglesTab(
 fun QuickToggleItemCard(
     action: RemapAction,
     isSelected: Boolean,
+    hasAdbPermission: Boolean = false,
     onClick: () -> Unit,
     onTest: () -> Unit
 ) {
     val icon = getToggleIcon(action.toggleKey)
+    val subtitleText = if (action.requiresAdb && hasAdbPermission) "" else action.subtitle
 
     Card(
         modifier = Modifier
@@ -140,10 +144,10 @@ fun QuickToggleItemCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (action.subtitle.isNotBlank()) {
+                if (subtitleText.isNotBlank()) {
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = action.subtitle,
+                        text = subtitleText,
                         style = MaterialTheme.typography.bodySmall,
                         color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -205,6 +209,7 @@ fun getToggleIcon(toggleKey: String?): ImageVector {
         "sound_mode" -> AppIcons.VolumeUp
         "battery_saver" -> AppIcons.BatterySaver
         "color_inversion" -> AppIcons.InvertColors
+        "dark_mode" -> AppIcons.Nightlight
         "extra_dim" -> AppIcons.Nightlight
         "eye_protection" -> AppIcons.Nightlight
         "bluetooth" -> AppIcons.Bluetooth

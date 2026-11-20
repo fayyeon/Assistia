@@ -23,6 +23,9 @@ class MainViewModel : ViewModel() {
     val selectedAction: StateFlow<RemapAction> = prefsManager.selectedActionFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RemapAction.DEFAULT)
 
+    val darkModePref: StateFlow<String> = prefsManager.darkModePreferenceFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "SYSTEM")
+
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab
 
@@ -74,6 +77,12 @@ class MainViewModel : ViewModel() {
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+
+    fun setDarkModePref(pref: String) {
+        viewModelScope.launch {
+            prefsManager.setDarkModePreference(pref)
+        }
     }
 
     fun selectAction(action: RemapAction) {

@@ -39,20 +39,20 @@ object QuickToggleRepository {
             isNonRootDirect = true
         ),
         RemapAction(
-            id = "toggle_camera_access",
-            type = ActionType.QUICK_TOGGLE,
-            title = "Camera Access (Sensor Privacy)",
-            subtitle = "Requires ADB to work properly",
-            toggleKey = "camera_access",
-            requiresAdb = true,
-            isNonRootDirect = false
-        ),
-        RemapAction(
             id = "toggle_color_inversion",
             type = ActionType.QUICK_TOGGLE,
             title = "Color Inversion",
             subtitle = "Requires ADB to work properly",
             toggleKey = "color_inversion",
+            requiresAdb = true,
+            isNonRootDirect = false
+        ),
+        RemapAction(
+            id = "toggle_dark_mode",
+            type = ActionType.QUICK_TOGGLE,
+            title = "Dark Mode",
+            subtitle = "Requires ADB to work properly",
+            toggleKey = "dark_mode",
             requiresAdb = true,
             isNonRootDirect = false
         ),
@@ -72,15 +72,6 @@ object QuickToggleRepository {
             toggleKey = "dnd",
             requiresPermission = "android.permission.ACCESS_NOTIFICATION_POLICY",
             isNonRootDirect = true
-        ),
-        RemapAction(
-            id = "toggle_extra_dim",
-            type = ActionType.QUICK_TOGGLE,
-            title = "Extra Dim",
-            subtitle = "Requires ADB to work properly",
-            toggleKey = "extra_dim",
-            requiresAdb = true,
-            isNonRootDirect = false
         ),
         RemapAction(
             id = "toggle_eye_protection",
@@ -109,15 +100,6 @@ object QuickToggleRepository {
             isNonRootDirect = false
         ),
         RemapAction(
-            id = "toggle_microphone_access",
-            type = ActionType.QUICK_TOGGLE,
-            title = "Microphone Access (Sensor Privacy)",
-            subtitle = "Requires ADB to work properly",
-            toggleKey = "microphone_access",
-            requiresAdb = true,
-            isNonRootDirect = false
-        ),
-        RemapAction(
             id = "toggle_mobile_data",
             type = ActionType.QUICK_TOGGLE,
             title = "Mobile Data",
@@ -128,7 +110,7 @@ object QuickToggleRepository {
         RemapAction(
             id = "toggle_sound_mode",
             type = ActionType.QUICK_TOGGLE,
-            title = "Sound Mode (Ring / Vibrate / Silent)",
+            title = "Sound mode (Ring / Vibrate)",
             subtitle = "",
             toggleKey = "sound_mode",
             isNonRootDirect = true

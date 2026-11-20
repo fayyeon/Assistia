@@ -60,7 +60,7 @@ fun AdbHelperDialog(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "To allow direct background toggling for Battery Saver, Extra Dim, Night Light, or Color Inversion without opening their settings screens, grant WRITE_SECURE_SETTINGS via ADB once:",
+                    text = "To allow direct background toggling for Battery Saver, Dark Mode, Night Light, or Color Inversion without opening their settings screens, grant WRITE_SECURE_SETTINGS via ADB once:",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -27,6 +27,7 @@ class PreferencesManager(private val context: Context) {
         val REQUIRES_PERMISSION = stringPreferencesKey("requires_permission")
         val IS_NON_ROOT_DIRECT = booleanPreferencesKey("is_non_root_direct")
         val TORCH_STATE = booleanPreferencesKey("torch_state")
+        val DARK_MODE_PREF = stringPreferencesKey("dark_mode_preference")
     }
 
     val selectedActionFlow: Flow<RemapAction> = context.dataStore.data.map { prefs ->
@@ -78,6 +79,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setTorchState(isOn: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[Keys.TORCH_STATE] = isOn
+        }
+    }
+
+    val darkModePreferenceFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.DARK_MODE_PREF] ?: "SYSTEM"
+    }
+
+    suspend fun setDarkModePreference(pref: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.DARK_MODE_PREF] = pref
         }
     }
 }

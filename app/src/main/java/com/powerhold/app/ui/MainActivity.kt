@@ -11,6 +11,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.powerhold.app.ui.screens.MainDashboardScreen
 import com.powerhold.app.ui.theme.PowerholdTheme
 
@@ -31,7 +34,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            PowerholdTheme {
+            val darkModePref by viewModel.darkModePref.collectAsState()
+            val isSystemDark = isSystemInDarkTheme()
+            val isDark = when (darkModePref) {
+                "DARK" -> true
+                "LIGHT" -> false
+                else -> isSystemDark
+            }
+
+            PowerholdTheme(darkTheme = isDark) {
                 MainDashboardScreen(
                     viewModel = viewModel,
                     onOpenAssistantSettings = { requestDefaultAssistant() }

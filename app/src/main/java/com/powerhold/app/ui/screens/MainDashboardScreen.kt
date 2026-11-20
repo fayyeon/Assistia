@@ -3,6 +3,7 @@ package com.powerhold.app.ui.screens
 import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.provider.Settings
@@ -11,6 +12,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,12 +38,12 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -62,6 +64,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -80,6 +83,14 @@ fun MainDashboardScreen(
     val selectedAction by viewModel.selectedAction.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val darkModePref by viewModel.darkModePref.collectAsState()
+
+    val isSystemDark = isSystemInDarkTheme()
+    val isDarkTheme = when (darkModePref) {
+        "DARK" -> true
+        "LIGHT" -> false
+        else -> isSystemDark
+    }
 
     val quickToggles by viewModel.filteredQuickToggles.collectAsState()
     val apps by viewModel.filteredInstalledApps.collectAsState()
@@ -93,22 +104,29 @@ fun MainDashboardScreen(
 
     // Track whether Powerhold is already set as the default assistant
     var isAssistantSet by remember { mutableStateOf(false) }
+    // Track whether WRITE_SECURE_SETTINGS permission is granted via ADB
+    var hasAdbPermission by remember { mutableStateOf(false) }
 
-    fun checkAssistantRole() {
+    fun checkPermissions() {
         isAssistantSet = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = context.getSystemService(RoleManager::class.java)
             roleManager?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
         } else {
             false
         }
+
+        hasAdbPermission = ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.WRITE_SECURE_SETTINGS
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
-    // Check on composition and re-check when app resumes (user may have set it in settings)
-    LaunchedEffect(Unit) { checkAssistantRole() }
+    // Check on composition and re-check when app resumes
+    LaunchedEffect(Unit) { checkPermissions() }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) checkAssistantRole()
+            if (event == Lifecycle.Event.ON_RESUME) checkPermissions()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -162,6 +180,19 @@ fun MainDashboardScreen(
                     }
                 },
                 actions = {
+                    // Dark mode toggle button
+                    IconButton(onClick = {
+                        val nextPref = if (isDarkTheme) "LIGHT" else "DARK"
+                        viewModel.setDarkModePref(nextPref)
+                        val msg = if (nextPref == "DARK") "Dark mode turned on" else "Dark mode turned off"
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    }) {
+                        Icon(
+                            imageVector = if (isDarkTheme) AppIcons.LightMode else AppIcons.Nightlight,
+                            contentDescription = if (isDarkTheme) "Switch to Light Mode" else "Switch to Dark Mode",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     IconButton(onClick = {
                         showSearch = !showSearch
                         if (!showSearch) viewModel.setSearchQuery("")
@@ -183,6 +214,34 @@ fun MainDashboardScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
+        },
+        bottomBar = {
+            // Material 3 Navigation Bar at the bottom
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 3.dp
+            ) {
+                val navItems = listOf(
+                    Triple("Quick Toggles", AppIcons.Widgets, 0),
+                    Triple("Apps", AppIcons.Apps, 1),
+                    Triple("Activities", AppIcons.Code, 2)
+                )
+                navItems.forEach { (label, icon, index) ->
+                    NavigationBarItem(
+                        selected = selectedTab == index,
+                        onClick = { viewModel.setSelectedTab(index) },
+                        icon = {
+                            Icon(imageVector = icon, contentDescription = label)
+                        },
+                        label = {
+                            Text(
+                                text = label,
+                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    )
+                }
+            }
         }
     ) { innerPadding ->
         Column(
@@ -225,54 +284,38 @@ fun MainDashboardScreen(
                 context = context,
                 action = selectedAction,
                 isAssistantSet = isAssistantSet,
+                hasAdbPermission = hasAdbPermission,
                 onTest = { viewModel.testAction(context) },
                 onSetDefault = onOpenAssistantSettings
             )
 
             Spacer(Modifier.height(8.dp))
 
-            // Expressive PrimaryTabRow
-            val tabs = listOf("Quick Toggles", "Apps", "Activities")
-            PrimaryTabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { viewModel.setSelectedTab(index) },
-                        text = {
-                            Text(
-                                text = title,
-                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
+            // Tab Content in weighted box so it scrolls properly above the bottom navigation bar
+            Box(modifier = Modifier.weight(1f)) {
+                when (selectedTab) {
+                    0 -> QuickTogglesTab(
+                        toggles = quickToggles,
+                        selectedAction = selectedAction,
+                        hasAdbPermission = hasAdbPermission,
+                        onSelectAction = { viewModel.selectAction(it) },
+                        onTestAction = { viewModel.testAction(context, it) }
+                    )
+                    1 -> InstalledAppsTab(
+                        apps = apps,
+                        isLoading = isLoadingApps,
+                        selectedAction = selectedAction,
+                        onSelectAction = { viewModel.selectAction(it) },
+                        onTestAction = { viewModel.testAction(context, it) }
+                    )
+                    2 -> AppActivitiesTab(
+                        activities = activities,
+                        isLoading = isLoadingActivities,
+                        selectedAction = selectedAction,
+                        onSelectAction = { viewModel.selectAction(it) },
+                        onTestAction = { viewModel.testAction(context, it) }
                     )
                 }
-            }
-
-            // Tab Content
-            when (selectedTab) {
-                0 -> QuickTogglesTab(
-                    toggles = quickToggles,
-                    selectedAction = selectedAction,
-                    onSelectAction = { viewModel.selectAction(it) },
-                    onTestAction = { viewModel.testAction(context, it) }
-                )
-                1 -> InstalledAppsTab(
-                    apps = apps,
-                    isLoading = isLoadingApps,
-                    selectedAction = selectedAction,
-                    onSelectAction = { viewModel.selectAction(it) },
-                    onTestAction = { viewModel.testAction(context, it) }
-                )
-                2 -> AppActivitiesTab(
-                    activities = activities,
-                    isLoading = isLoadingActivities,
-                    selectedAction = selectedAction,
-                    onSelectAction = { viewModel.selectAction(it) },
-                    onTestAction = { viewModel.testAction(context, it) }
-                )
             }
         }
     }
@@ -283,6 +326,7 @@ fun ActiveActionHeroCard(
     context: Context,
     action: RemapAction,
     isAssistantSet: Boolean,
+    hasAdbPermission: Boolean = false,
     onTest: () -> Unit,
     onSetDefault: () -> Unit
 ) {
@@ -300,6 +344,8 @@ fun ActiveActionHeroCard(
         if (action.type == ActionType.QUICK_TOGGLE) getToggleIcon(action.toggleKey)
         else null
     }
+
+    val subtitleText = if (action.requiresAdb && hasAdbPermission) "" else action.subtitle
 
     Card(
         modifier = Modifier
@@ -365,9 +411,9 @@ fun ActiveActionHeroCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (action.subtitle.isNotBlank()) {
+                    if (subtitleText.isNotBlank()) {
                         Text(
-                            text = action.subtitle,
+                            text = subtitleText,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
