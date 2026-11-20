@@ -173,18 +173,20 @@ fun MainDashboardScreen(
                     }
                 },
                 actions = {
-                    // AMOLED pure black toggle button (switches between standard dark and amoled pure black)
-                    IconButton(onClick = {
-                        val next = !isAmoledMode
-                        viewModel.setAmoledMode(next)
-                        val msg = if (next) "AMOLED Pure Black mode enabled" else "Standard Dark mode enabled"
-                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                    }) {
-                        Icon(
-                            imageVector = AppIcons.Contrast,
-                            contentDescription = "Toggle AMOLED Pure Black",
-                            tint = if (isAmoledMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    // AMOLED pure black toggle button (only visible when device is in dark mode)
+                    if (isSystemInDarkTheme()) {
+                        IconButton(onClick = {
+                            val next = !isAmoledMode
+                            viewModel.setAmoledMode(next)
+                            val msg = if (next) "AMOLED Pure Black mode enabled" else "Standard Dark mode enabled"
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        }) {
+                            Icon(
+                                imageVector = AppIcons.Contrast,
+                                contentDescription = "Toggle AMOLED Pure Black",
+                                tint = if (isAmoledMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                     IconButton(onClick = {
                         showSearch = !showSearch
