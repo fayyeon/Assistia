@@ -92,11 +92,12 @@ fun QuickToggleItemCard(
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                MaterialTheme.colorScheme.primaryContainer
             else
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                MaterialTheme.colorScheme.surfaceVariant
         ),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
+        border = if (!isSelected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)) else null
     ) {
         Row(
             modifier = Modifier
@@ -110,7 +111,7 @@ fun QuickToggleItemCard(
                 color = if (isSelected)
                     MaterialTheme.colorScheme.primary
                 else
-                    MaterialTheme.colorScheme.surfaceVariant
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -119,7 +120,7 @@ fun QuickToggleItemCard(
                         tint = if (isSelected)
                             MaterialTheme.colorScheme.onPrimary
                         else
-                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -134,30 +135,19 @@ fun QuickToggleItemCard(
                     text = action.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = action.subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(Modifier.height(6.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (action.isNonRootDirect) {
-                        BadgePill("Non-Root Direct", MaterialTheme.colorScheme.primaryContainer)
-                    } else if (action.requiresAdb) {
-                        BadgePill("ADB / Panel", MaterialTheme.colorScheme.tertiaryContainer)
-                    } else {
-                        BadgePill("Quick Panel", MaterialTheme.colorScheme.secondaryContainer)
-                    }
+                if (action.subtitle.isNotBlank()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = action.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 

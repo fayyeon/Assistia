@@ -97,28 +97,30 @@ object ActionExecutor {
                 fallbackIntent = Intent(Settings.ACTION_NIGHT_DISPLAY_SETTINGS)
             )
             "bluetooth" -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    openIntentSafely(context, Intent("android.settings.panel.action.BLUETOOTH"))
-                } else {
-                    openIntentSafely(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
-                }
-                showToast(context, "Bluetooth Panel opened")
+                openIntentSafely(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+                showToast(context, "Bluetooth settings opened")
             }
             "wifi" -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    openIntentSafely(context, Intent("android.settings.panel.action.INTERNET_CONNECTIVITY"))
+                    val opened = tryOpenIntent(context, Intent("android.settings.panel.action.INTERNET_CONNECTIVITY"))
+                    if (!opened) {
+                        openIntentSafely(context, Intent(Settings.ACTION_WIFI_SETTINGS))
+                    }
                 } else {
                     openIntentSafely(context, Intent(Settings.ACTION_WIFI_SETTINGS))
                 }
-                showToast(context, "Wi-Fi Panel opened")
+                showToast(context, "Wi-Fi settings opened")
             }
             "mobile_data" -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    openIntentSafely(context, Intent("android.settings.panel.action.INTERNET_CONNECTIVITY"))
+                    val opened = tryOpenIntent(context, Intent("android.settings.panel.action.INTERNET_CONNECTIVITY"))
+                    if (!opened) {
+                        openIntentSafely(context, Intent(Settings.ACTION_DATA_ROAMING_SETTINGS))
+                    }
                 } else {
                     openIntentSafely(context, Intent(Settings.ACTION_DATA_ROAMING_SETTINGS))
                 }
-                showToast(context, "Mobile Data Panel opened")
+                showToast(context, "Mobile Data settings opened")
             }
             "airplane_mode" -> {
                 openIntentSafely(context, Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS))
@@ -233,19 +235,39 @@ object ActionExecutor {
             return
         }
 
-        when (audioManager.ringerMode) {
-            AudioManager.RINGER_MODE_NORMAL -> {
-                audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
-                showToast(context, "📳 Sound: Vibrate")
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+        if (notificationManager != null && !notificationManager.isNotificationPolicyAccessGranted) {
+            showToast(context, "Grant 'Do Not Disturb' access to change sound modes")
+            val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            AudioManager.RINGER_MODE_VIBRATE -> {
-                audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-                showToast(context, "🔇 Sound: Silent")
+            context.startActivity(intent)
+            return
+        }
+
+        try {
+            when (audioManager.ringerMode) {
+                AudioManager.RINGER_MODE_NORMAL -> {
+                    audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
+                    showToast(context, "📳 Sound: Vibrate")
+                }
+                AudioManager.RINGER_MODE_VIBRATE -> {
+                    audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+                    showToast(context, "🔇 Sound: Silent")
+                }
+                else -> {
+                    audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+                    showToast(context, "🔔 Sound: Normal")
+                }
             }
-            else -> {
-                audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-                showToast(context, "🔔 Sound: Normal")
+        } catch (e: SecurityException) {
+            val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
+            context.startActivity(intent)
+            showToast(context, "Grant DND access to toggle ringer mode")
+        } catch (e: Exception) {
+            showToast(context, "Sound mode error: ${e.localizedMessage}")
         }
     }
 
@@ -285,6 +307,16 @@ object ActionExecutor {
         } catch (e: SecurityException) {
             openIntentSafely(context, fallbackIntent)
             showToast(context, "Opened $friendlyName (Run ADB command for direct toggle)")
+        }
+    }
+
+    private fun tryOpenIntent(context: Context, intent: Intent): Boolean {
+        return try {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 

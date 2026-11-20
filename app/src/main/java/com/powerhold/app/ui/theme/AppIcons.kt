@@ -88,17 +88,34 @@ object AppIcons {
 
     val Bedtime: ImageVector = materialIcon(name = "Bedtime") {
         materialPath {
-            moveTo(12.3f, 2.0f)
-            curveToRelative(0.43f, 0.0f, 0.85f, 0.03f, 1.28f, 0.08f)
-            curveTo(7.88f, 3.42f, 3.5f, 8.52f, 3.5f, 14.65f)
-            curveToRelative(0.0f, 6.78f, 5.42f, 12.28f, 12.18f, 12.35f)
-            curveToRelative(1.08f, 0.01f, 2.13f, -0.15f, 3.12f, -0.47f)
-            curveTo(16.74f, 29.87f, 10.9f, 30.5f, 5.8f, 26.5f)
+            moveTo(12.0f, 2.0f)
+            curveTo(6.48f, 2.0f, 2.0f, 6.48f, 2.0f, 12.0f)
+            reflectiveCurveToRelative(4.48f, 10.0f, 10.0f, 10.0f)
+            reflectiveCurveToRelative(10.0f, -4.48f, 10.0f, -10.0f)
+            reflectiveCurveTo(17.52f, 2.0f, 12.0f, 2.0f)
             close()
-            moveTo(9.27f, 4.49f)
-            curveTo(5.2f, 7.02f, 2.5f, 11.63f, 2.5f, 16.5f)
-            curveTo(2.5f, 23.95f, 8.55f, 30.0f, 16.0f, 30.0f)
-            curveToRelative(3.54f, 0.0f, 6.76f, -1.37f, 9.17f, -3.61f)
+            moveTo(12.0f, 20.0f)
+            curveToRelative(-4.41f, 0.0f, -8.0f, -3.59f, -8.0f, -8.0f)
+            reflectiveCurveToRelative(3.59f, -8.0f, 8.0f, -8.0f)
+            reflectiveCurveToRelative(8.0f, 3.59f, 8.0f, 8.0f)
+            reflectiveCurveToRelative(-3.59f, 8.0f, -8.0f, 8.0f)
+            close()
+            moveTo(8.0f, 11.0f)
+            horizontalLineToRelative(8.0f)
+            verticalLineToRelative(2.0f)
+            horizontalLineTo(8.0f)
+            close()
+        }
+    }
+
+    val KeyboardArrowDown: ImageVector = materialIcon(name = "KeyboardArrowDown") {
+        materialPath {
+            moveTo(7.41f, 8.59f)
+            lineTo(12.0f, 13.17f)
+            lineTo(16.59f, 8.59f)
+            lineTo(18.0f, 10.0f)
+            lineTo(12.0f, 16.0f)
+            lineTo(6.0f, 10.0f)
             close()
         }
     }

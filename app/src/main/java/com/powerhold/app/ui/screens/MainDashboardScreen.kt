@@ -61,7 +61,10 @@ import com.powerhold.app.ui.theme.AppIcons
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainDashboardScreen(viewModel: MainViewModel) {
+fun MainDashboardScreen(
+    viewModel: MainViewModel,
+    onOpenAssistantSettings: () -> Unit = {}
+) {
     val context = LocalContext.current
     val selectedAction by viewModel.selectedAction.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
@@ -141,7 +144,7 @@ fun MainDashboardScreen(viewModel: MainViewModel) {
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                    IconButton(onClick = { openAssistantSettings(context) }) {
+                    IconButton(onClick = onOpenAssistantSettings) {
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "Set Default Assistant",
@@ -194,7 +197,7 @@ fun MainDashboardScreen(viewModel: MainViewModel) {
             ActiveActionHeroCard(
                 action = selectedAction,
                 onTest = { viewModel.testAction(context) },
-                onSetDefault = { openAssistantSettings(context) }
+                onSetDefault = onOpenAssistantSettings
             )
 
             Spacer(Modifier.height(8.dp))
@@ -258,8 +261,9 @@ fun ActiveActionHeroCard(
             .padding(horizontal = 16.dp, vertical = 6.dp),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Column(
             modifier = Modifier
@@ -297,16 +301,19 @@ fun ActiveActionHeroCard(
                         text = action.title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = action.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    if (action.subtitle.isNotBlank()) {
+                        Text(
+                            text = action.subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
 
@@ -332,7 +339,11 @@ fun ActiveActionHeroCard(
 
                 FilledTonalButton(
                     onClick = onSetDefault,
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    )
                 ) {
                     Text("Set as Assistant")
                 }

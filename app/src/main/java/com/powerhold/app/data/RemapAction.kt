@@ -19,8 +19,8 @@ data class RemapAction(
         val DEFAULT = RemapAction(
             id = "toggle_flashlight",
             type = ActionType.QUICK_TOGGLE,
-            title = "Flashlight Toggle",
-            subtitle = "Turn torch on or off instantly without screen",
+            title = "Flashlight",
+            subtitle = "",
             toggleKey = "flashlight",
             isNonRootDirect = true
         )

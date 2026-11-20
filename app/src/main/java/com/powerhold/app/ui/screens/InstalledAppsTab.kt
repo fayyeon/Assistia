@@ -128,11 +128,12 @@ fun AppItemCard(
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                MaterialTheme.colorScheme.primaryContainer
             else
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                MaterialTheme.colorScheme.surfaceVariant
         ),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
+        border = if (!isSelected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)) else null
     ) {
         Row(
             modifier = Modifier
@@ -172,6 +173,7 @@ fun AppItemCard(
                     text = action.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

@@ -78,8 +78,8 @@ object AppListRepository {
                     RemapAction(
                         id = "act_${pkg.packageName}_$fullActivityName",
                         type = ActionType.LAUNCH_ACTIVITY,
-                        title = "$activityLabel ($appLabel)",
-                        subtitle = "$fullActivityName",
+                        title = activityLabel,
+                        subtitle = appLabel,
                         packageName = pkg.packageName,
                         activityName = fullActivityName,
                         isNonRootDirect = activity.exported

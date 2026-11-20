@@ -17,12 +17,12 @@ val OnTertiaryLight = Color(0xFFFFFFFF)
 val TertiaryContainerLight = Color(0xFFECDCFF)
 val OnTertiaryContainerLight = Color(0xFF211634)
 
-val BackgroundLight = Color(0xFFF7F9FD)
-val OnBackgroundLight = Color(0xFF181C20)
-val SurfaceLight = Color(0xFFF7F9FD)
-val OnSurfaceLight = Color(0xFF181C20)
-val SurfaceVariantLight = Color(0xFFDDE3EA)
-val OnSurfaceVariantLight = Color(0xFF41474D)
+val BackgroundLight = Color(0xFFF8F9FA)
+val OnBackgroundLight = Color(0xFF1A1C1E)
+val SurfaceLight = Color(0xFFFFFFFF)
+val OnSurfaceLight = Color(0xFF1A1C1E)
+val SurfaceVariantLight = Color(0xFFF1F3F5)
+val OnSurfaceVariantLight = Color(0xFF44474E)
 
 // Dark Palette
 val PrimaryDark = Color(0xFF8FCDFF)
