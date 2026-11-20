@@ -48,15 +48,6 @@ object QuickToggleRepository {
             isNonRootDirect = false
         ),
         RemapAction(
-            id = "toggle_dark_mode",
-            type = ActionType.QUICK_TOGGLE,
-            title = "Dark Mode",
-            subtitle = "Requires ADB to work properly",
-            toggleKey = "dark_mode",
-            requiresAdb = true,
-            isNonRootDirect = false
-        ),
-        RemapAction(
             id = "toggle_data_saver",
             type = ActionType.QUICK_TOGGLE,
             title = "Data Saver Settings",

@@ -34,15 +34,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val darkModePref by viewModel.darkModePref.collectAsState()
-            val isSystemDark = isSystemInDarkTheme()
-            val isDark = when (darkModePref) {
-                "DARK" -> true
-                "LIGHT" -> false
-                else -> isSystemDark
-            }
+            val isAmoledMode by viewModel.isAmoledMode.collectAsState()
 
-            PowerholdTheme(darkTheme = isDark) {
+            PowerholdTheme(
+                darkTheme = isSystemInDarkTheme(),
+                amoledMode = isAmoledMode
+            ) {
                 MainDashboardScreen(
                     viewModel = viewModel,
                     onOpenAssistantSettings = { requestDefaultAssistant() }

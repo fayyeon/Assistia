@@ -83,14 +83,7 @@ fun MainDashboardScreen(
     val selectedAction by viewModel.selectedAction.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
-    val darkModePref by viewModel.darkModePref.collectAsState()
-
-    val isSystemDark = isSystemInDarkTheme()
-    val isDarkTheme = when (darkModePref) {
-        "DARK" -> true
-        "LIGHT" -> false
-        else -> isSystemDark
-    }
+    val isAmoledMode by viewModel.isAmoledMode.collectAsState()
 
     val quickToggles by viewModel.filteredQuickToggles.collectAsState()
     val apps by viewModel.filteredInstalledApps.collectAsState()
@@ -180,17 +173,17 @@ fun MainDashboardScreen(
                     }
                 },
                 actions = {
-                    // Dark mode toggle button
+                    // AMOLED pure black toggle button (switches between standard dark and amoled pure black)
                     IconButton(onClick = {
-                        val nextPref = if (isDarkTheme) "LIGHT" else "DARK"
-                        viewModel.setDarkModePref(nextPref)
-                        val msg = if (nextPref == "DARK") "Dark mode turned on" else "Dark mode turned off"
+                        val next = !isAmoledMode
+                        viewModel.setAmoledMode(next)
+                        val msg = if (next) "AMOLED Pure Black mode enabled" else "Standard Dark mode enabled"
                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                     }) {
                         Icon(
-                            imageVector = if (isDarkTheme) AppIcons.LightMode else AppIcons.Nightlight,
-                            contentDescription = if (isDarkTheme) "Switch to Light Mode" else "Switch to Dark Mode",
-                            tint = MaterialTheme.colorScheme.primary
+                            imageVector = AppIcons.Contrast,
+                            contentDescription = "Toggle AMOLED Pure Black",
+                            tint = if (isAmoledMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     IconButton(onClick = {

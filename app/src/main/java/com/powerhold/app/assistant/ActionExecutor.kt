@@ -82,7 +82,6 @@ object ActionExecutor {
                 friendlyName = "Color Inversion",
                 fallbackIntent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             )
-            "dark_mode" -> toggleDarkMode(context)
             "eye_protection" -> toggleSecureSetting(
                 context = context,
                 settingKey = "night_display_activated",
@@ -255,18 +254,6 @@ object ActionExecutor {
             showToast(context, "Grant DND access to toggle ringer mode")
         } catch (e: Exception) {
             showToast(context, "Sound mode error: ${e.localizedMessage}")
-        }
-    }
-
-    private fun toggleDarkMode(context: Context) {
-        try {
-            val current = Settings.Secure.getInt(context.contentResolver, "ui_night_mode", 1)
-            val next = if (current == 2) 1 else 2
-            Settings.Secure.putInt(context.contentResolver, "ui_night_mode", next)
-            showToast(context, if (next == 2) "🌙 Dark Mode ON" else "☀️ Dark Mode OFF")
-        } catch (e: SecurityException) {
-            openIntentSafely(context, Intent(Settings.ACTION_DISPLAY_SETTINGS))
-            showToast(context, "Opened Display Settings (Run ADB command for direct toggle)")
         }
     }
 

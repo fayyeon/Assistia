@@ -287,6 +287,22 @@ object AppIcons {
         }
     }
 
+    val Contrast: ImageVector = materialIcon(name = "Contrast") {
+        materialPath {
+            moveTo(12.0f, 2.0f)
+            curveTo(6.48f, 2.0f, 2.0f, 6.48f, 2.0f, 12.0f)
+            reflectiveCurveToRelative(4.48f, 10.0f, 10.0f, 10.0f)
+            reflectiveCurveToRelative(10.0f, -4.48f, 10.0f, -10.0f)
+            reflectiveCurveTo(17.52f, 2.0f, 12.0f, 2.0f)
+            close()
+            moveTo(12.0f, 20.0f)
+            curveToRelative(-4.41f, 0.0f, -8.0f, -3.59f, -8.0f, -8.0f)
+            reflectiveCurveToRelative(3.59f, -8.0f, 8.0f, -8.0f)
+            verticalLineToRelative(16.0f)
+            close()
+        }
+    }
+
     val Bluetooth: ImageVector = materialIcon(name = "Bluetooth") {
         materialPath {
             moveTo(17.71f, 7.71f)

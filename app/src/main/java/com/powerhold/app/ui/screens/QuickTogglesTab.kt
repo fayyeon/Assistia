@@ -19,9 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
@@ -158,23 +156,6 @@ fun QuickToggleItemCard(
 
             Spacer(Modifier.width(8.dp))
 
-            FilledIconButton(
-                onClick = onTest,
-                modifier = Modifier.size(36.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            ) {
-                Icon(
-                    imageVector = AppIcons.PlayArrow,
-                    contentDescription = "Test toggle",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(Modifier.width(4.dp))
-
             RadioButton(
                 selected = isSelected,
                 onClick = onClick,
@@ -209,8 +190,6 @@ fun getToggleIcon(toggleKey: String?): ImageVector {
         "sound_mode" -> AppIcons.VolumeUp
         "battery_saver" -> AppIcons.BatterySaver
         "color_inversion" -> AppIcons.InvertColors
-        "dark_mode" -> AppIcons.Nightlight
-        "extra_dim" -> AppIcons.Nightlight
         "eye_protection" -> AppIcons.Nightlight
         "bluetooth" -> AppIcons.Bluetooth
         "wifi" -> AppIcons.Wifi
