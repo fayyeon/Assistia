@@ -155,7 +155,7 @@ object ActionExecutor {
                 val newState = !currentState
                 cameraManager.setTorchMode(cameraId, newState)
                 prefs.setTorchState(newState)
-                showToast(context, if (newState) "🔦 Flashlight ON" else "🔦 Flashlight OFF")
+                showToast(context, if (newState) "Flashlight ON" else "Flashlight OFF")
             } else {
                 showToast(context, "No camera flash found")
             }
@@ -188,7 +188,7 @@ object ActionExecutor {
             Settings.System.ACCELEROMETER_ROTATION,
             next
         )
-        showToast(context, if (next == 1) "🔄 Auto-rotate ON" else "🔒 Auto-rotate LOCKED")
+        showToast(context, if (next == 1) "Auto-rotate ON" else "Auto-rotate LOCKED")
     }
 
     private fun toggleDnd(context: Context) {
@@ -217,7 +217,7 @@ object ActionExecutor {
         notificationManager.setInterruptionFilter(nextFilter)
         showToast(
             context,
-            if (nextFilter == NotificationManager.INTERRUPTION_FILTER_PRIORITY) "🌙 Do Not Disturb ON" else "🔔 Do Not Disturb OFF"
+            if (nextFilter == NotificationManager.INTERRUPTION_FILTER_PRIORITY) "Do Not Disturb ON" else "Do Not Disturb OFF"
         )
     }
 
@@ -241,10 +241,10 @@ object ActionExecutor {
         try {
             if (audioManager.ringerMode == AudioManager.RINGER_MODE_VIBRATE) {
                 audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-                showToast(context, "🔔 Sound: Ring")
+                showToast(context, "Sound: Ring")
             } else {
                 audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
-                showToast(context, "📳 Sound: Vibrate")
+                showToast(context, "Sound: Vibrate")
             }
         } catch (e: SecurityException) {
             val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
@@ -262,7 +262,7 @@ object ActionExecutor {
             val current = Settings.Global.getInt(context.contentResolver, "low_power", 0)
             val next = if (current == 1) 0 else 1
             Settings.Global.putInt(context.contentResolver, "low_power", next)
-            showToast(context, if (next == 1) "🔋 Battery Saver ON" else "🔋 Battery Saver OFF")
+            showToast(context, if (next == 1) "Battery Saver ON" else "Battery Saver OFF")
         } catch (e: SecurityException) {
             // Needs WRITE_SECURE_SETTINGS via ADB, fallback to settings screen
             openIntentSafely(context, Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))

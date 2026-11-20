@@ -12,6 +12,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,8 +35,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,7 +49,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -59,11 +62,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.Lifecycle
@@ -72,6 +77,7 @@ import com.powerhold.app.data.ActionType
 import com.powerhold.app.data.RemapAction
 import com.powerhold.app.ui.MainViewModel
 import com.powerhold.app.ui.theme.AppIcons
+import com.powerhold.app.ui.theme.PowerholdSerifFontFamily
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,6 +100,7 @@ fun MainDashboardScreen(
 
     var showSearch by remember { mutableStateOf(false) }
     var showAdbDialog by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     // Track whether Powerhold is already set as the default assistant
     var isAssistantSet by remember { mutableStateOf(false) }
@@ -138,48 +145,23 @@ fun MainDashboardScreen(
         AdbHelperDialog(onDismiss = { showAdbDialog = false })
     }
 
+    if (showAboutDialog) {
+        AboutAppDialog(onDismiss = { showAboutDialog = false })
+    }
+
+    // Scroll behavior to hide the top title bar when scrolling down
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = AppIcons.Power,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                        }
-                        Spacer(Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "Powerhold",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Default Assistant Shortcut Remapper",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    // AMOLED pure black toggle button (only visible when device is in dark mode)
+            CenterAlignedTopAppBar(
+                scrollBehavior = scrollBehavior,
+                navigationIcon = {
+                    // AMOLED pure black toggle button on top-left (only visible when device is in dark mode)
                     if (isSystemInDarkTheme()) {
                         IconButton(onClick = {
-                            val next = !isAmoledMode
-                            viewModel.setAmoledMode(next)
-                            val msg = if (next) "AMOLED Pure Black mode enabled" else "Standard Dark mode enabled"
-                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            viewModel.setAmoledMode(!isAmoledMode)
                         }) {
                             Icon(
                                 imageVector = AppIcons.Contrast,
@@ -188,15 +170,23 @@ fun MainDashboardScreen(
                             )
                         }
                     }
-                    IconButton(onClick = {
-                        showSearch = !showSearch
-                        if (!showSearch) viewModel.setSearchQuery("")
-                    }) {
-                        Icon(
-                            imageVector = if (showSearch) Icons.Default.Close else Icons.Default.Search,
-                            contentDescription = "Search"
-                        )
-                    }
+                },
+                title = {
+                    Text(
+                        text = "Powerhold",
+                        fontFamily = PowerholdSerifFontFamily,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            showAboutDialog = true
+                        }
+                    )
+                },
+                actions = {
                     IconButton(onClick = { showAdbDialog = true }) {
                         Icon(
                             imageVector = AppIcons.Terminal,
@@ -205,10 +195,27 @@ fun MainDashboardScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
+        },
+        floatingActionButton = {
+            // WhatsApp-style Floating Action Button for search above bottom navigation
+            FloatingActionButton(
+                onClick = {
+                    showSearch = !showSearch
+                    if (!showSearch) viewModel.setSearchQuery("")
+                },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(
+                    imageVector = if (showSearch) Icons.Default.Close else Icons.Default.Search,
+                    contentDescription = if (showSearch) "Close search" else "Search"
+                )
+            }
         },
         bottomBar = {
             // Material 3 Navigation Bar at the bottom
@@ -244,7 +251,17 @@ fun MainDashboardScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Search Bar (collapsible)
+            // Current Active Action Hero Card at the top of content
+            ActiveActionHeroCard(
+                context = context,
+                action = selectedAction,
+                isAssistantSet = isAssistantSet,
+                hasAdbPermission = hasAdbPermission,
+                onTest = { viewModel.testAction(context) },
+                onSetDefault = onOpenAssistantSettings
+            )
+
+            // Search Bar (placed below the Trigger Action box as requested)
             AnimatedVisibility(
                 visible = showSearch,
                 enter = fadeIn(),
@@ -273,16 +290,6 @@ fun MainDashboardScreen(
                     )
                 }
             }
-
-            // Current Active Action Hero Card
-            ActiveActionHeroCard(
-                context = context,
-                action = selectedAction,
-                isAssistantSet = isAssistantSet,
-                hasAdbPermission = hasAdbPermission,
-                onTest = { viewModel.testAction(context) },
-                onSetDefault = onOpenAssistantSettings
-            )
 
             Spacer(Modifier.height(8.dp))
 
@@ -330,7 +337,7 @@ fun ActiveActionHeroCard(
         if (action.type == ActionType.OPEN_APP || action.type == ActionType.LAUNCH_ACTIVITY) {
             try {
                 action.packageName?.let { context.packageManager.getApplicationIcon(it) }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         } else null
@@ -456,19 +463,21 @@ fun ActiveActionHeroCard(
 }
 
 private fun openAssistantSettings(context: Context) {
-    try {
-        val intent = Intent(Settings.ACTION_VOICE_INPUT_SETTINGS).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(intent)
-    } catch (e: Exception) {
+    val intents = listOf(
+        Intent(Settings.ACTION_VOICE_INPUT_SETTINGS),
+        Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS),
+        Intent("android.settings.VOICE_INPUT_SETTINGS"),
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = android.net.Uri.parse("package:${context.packageName}")
+        },
+        Intent(Settings.ACTION_SETTINGS)
+    )
+    for (intent in intents) {
         try {
-            val intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
-        } catch (e2: Exception) {
-            Toast.makeText(context, "Open Settings -> Apps -> Default apps -> Digital assistant", Toast.LENGTH_LONG).show()
-        }
+            return
+        } catch (_: Exception) {}
     }
+    Toast.makeText(context, "Open Settings -> Apps -> Default apps -> Digital assistant", Toast.LENGTH_LONG).show()
 }

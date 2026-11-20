@@ -49,39 +49,22 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestDefaultAssistant() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val roleManager = getSystemService(RoleManager::class.java)
-            if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) {
-                if (!roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)) {
-                    val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT)
-                    try {
-                        assistantRoleLauncher.launch(intent)
-                        return
-                    } catch (e: Exception) {
-                        // Fall back to settings
-                    }
-                } else {
-                    Toast.makeText(this, "Powerhold is already your default assistant", Toast.LENGTH_SHORT).show()
-                    return
-                }
-            }
-        }
-
-        // Fallbacks for MIUI / older Android or if role dialog is bypassed
-        try {
-            val intent = Intent(Settings.ACTION_VOICE_INPUT_SETTINGS).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            startActivity(intent)
-        } catch (e: Exception) {
+        val intents = listOf(
+            Intent(Settings.ACTION_VOICE_INPUT_SETTINGS),
+            Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS),
+            Intent("android.settings.VOICE_INPUT_SETTINGS"),
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = android.net.Uri.parse("package:$packageName")
+            },
+            Intent(Settings.ACTION_SETTINGS)
+        )
+        for (intent in intents) {
             try {
-                val intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 startActivity(intent)
-            } catch (e2: Exception) {
-                Toast.makeText(this, "Go to Settings -> Apps -> Default apps -> Digital assistant", Toast.LENGTH_LONG).show()
-            }
+                return
+            } catch (_: Exception) {}
         }
+        Toast.makeText(this, "Open Settings -> Apps -> Default apps -> Digital assistant", Toast.LENGTH_LONG).show()
     }
 }
