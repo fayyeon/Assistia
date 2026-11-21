@@ -1,7 +1,6 @@
 package com.powerhold.app.ui.screens
 
 import android.app.role.RoleManager
-import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
@@ -83,7 +82,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.powerhold.app.data.ActionType
-import com.powerhold.app.data.RemapAction
 import com.powerhold.app.ui.MainViewModel
 import com.powerhold.app.ui.theme.AppIcons
 import com.powerhold.app.ui.theme.PowerholdSerifFontFamily
