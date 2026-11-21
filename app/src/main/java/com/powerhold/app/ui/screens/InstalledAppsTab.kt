@@ -48,6 +48,7 @@ fun InstalledAppsTab(
     apps: List<RemapAction>,
     isLoading: Boolean,
     selectedAction: RemapAction,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     onSelectAction: (RemapAction) -> Unit,
     onTestAction: (RemapAction) -> Unit
 ) {
@@ -87,7 +88,7 @@ fun InstalledAppsTab(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         items(apps, key = { it.id }) { action ->

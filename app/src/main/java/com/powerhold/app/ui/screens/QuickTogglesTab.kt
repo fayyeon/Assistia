@@ -44,6 +44,7 @@ fun QuickTogglesTab(
     toggles: List<RemapAction>,
     selectedAction: RemapAction,
     hasAdbPermission: Boolean = false,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     onSelectAction: (RemapAction) -> Unit,
     onTestAction: (RemapAction) -> Unit
 ) {
@@ -53,7 +54,7 @@ fun QuickTogglesTab(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No quick toggles match search",
+                text = "No actions found",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -63,7 +64,7 @@ fun QuickTogglesTab(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         items(toggles, key = { it.id }) { action ->

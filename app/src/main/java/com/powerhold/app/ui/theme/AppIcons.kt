@@ -2,6 +2,7 @@ package com.powerhold.app.ui.theme
 
 import androidx.compose.material.icons.materialIcon
 import androidx.compose.material.icons.materialPath
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -784,43 +785,47 @@ object AppIcons {
     }
 
     val Palette: ImageVector = materialIcon(name = "Palette") {
-        materialPath {
+        materialPath(pathFillType = PathFillType.EvenOdd) {
             moveTo(12.0f, 3.0f)
             curveToRelative(-4.97f, 0.0f, -9.0f, 4.03f, -9.0f, 9.0f)
             curveToRelative(0.0f, 2.12f, 0.74f, 4.07f, 1.97f, 5.61f)
             curveToRelative(0.47f, 0.58f, 1.18f, 0.94f, 1.95f, 0.94f)
-            horizontalLineToRelative(1.58f)
+            horizontalLineTo(8.5f)
             curveToRelative(0.83f, 0.0f, 1.5f, -0.67f, 1.5f, -1.5f)
-            curveToRelative(0.0f, -0.4f, -0.16f, -0.76f, -0.43f, -1.03f)
-            curveToRelative(-0.28f, -0.28f, -0.43f, -0.65f, -0.43f, -1.06f)
+            curveToRelative(0.0f, -0.39f, -0.15f, -0.74f, -0.39f, -1.01f)
+            curveToRelative(-0.23f, -0.26f, -0.38f, -0.61f, -0.38f, -0.99f)
             curveToRelative(0.0f, -0.83f, 0.67f, -1.5f, 1.5f, -1.5f)
             horizontalLineTo(14.0f)
             curveToRelative(3.87f, 0.0f, 7.0f, -3.13f, 7.0f, -7.0f)
             curveToRelative(0.0f, -4.97f, -4.03f, -9.0f, -9.0f, -9.0f)
             close()
-            moveTo(6.5f, 11.5f)
+            // Hole 1: (5.5, 10.5)
+            moveTo(5.5f, 9.0f)
+            curveToRelative(0.83f, 0.0f, 1.5f, 0.67f, 1.5f, 1.5f)
+            curveToRelative(0.0f, 0.83f, -0.67f, 1.5f, -1.5f, 1.5f)
             curveToRelative(-0.83f, 0.0f, -1.5f, -0.67f, -1.5f, -1.5f)
-            reflectiveCurveToRelative(0.67f, -1.5f, 1.5f, -1.5f)
-            reflectiveCurveToRelative(1.5f, 0.67f, 1.5f, 1.5f)
-            reflectiveCurveToRelative(-0.67f, 1.5f, -1.5f, 1.5f)
+            curveToRelative(0.0f, -0.83f, 0.67f, -1.5f, 1.5f, -1.5f)
             close()
-            moveTo(9.5f, 7.5f)
+            // Hole 2: (8.5, 6.5)
+            moveTo(8.5f, 5.0f)
+            curveToRelative(0.83f, 0.0f, 1.5f, 0.67f, 1.5f, 1.5f)
+            curveToRelative(0.0f, 0.83f, -0.67f, 1.5f, -1.5f, 1.5f)
             curveToRelative(-0.83f, 0.0f, -1.5f, -0.67f, -1.5f, -1.5f)
-            reflectiveCurveTo(8.67f, 4.5f, 9.5f, 4.5f)
-            reflectiveCurveToRelative(1.5f, 0.67f, 1.5f, 1.5f)
-            reflectiveCurveToRelative(-0.67f, 1.5f, -1.5f, 1.5f)
+            curveToRelative(0.0f, -0.83f, 0.67f, -1.5f, 1.5f, -1.5f)
             close()
-            moveTo(14.5f, 7.5f)
+            // Hole 3: (14.5, 6.5)
+            moveTo(14.5f, 5.0f)
+            curveToRelative(0.83f, 0.0f, 1.5f, 0.67f, 1.5f, 1.5f)
+            curveToRelative(0.0f, 0.83f, -0.67f, 1.5f, -1.5f, 1.5f)
             curveToRelative(-0.83f, 0.0f, -1.5f, -0.67f, -1.5f, -1.5f)
-            reflectiveCurveTo(13.67f, 4.5f, 14.5f, 4.5f)
-            reflectiveCurveToRelative(1.5f, 0.67f, 1.5f, 1.5f)
-            reflectiveCurveToRelative(-0.67f, 1.5f, -1.5f, 1.5f)
+            curveToRelative(0.0f, -0.83f, 0.67f, -1.5f, 1.5f, -1.5f)
             close()
-            moveTo(17.5f, 11.5f)
+            // Hole 4: (17.5, 10.5)
+            moveTo(17.5f, 9.0f)
+            curveToRelative(0.83f, 0.0f, 1.5f, 0.67f, 1.5f, 1.5f)
+            curveToRelative(0.0f, 0.83f, -0.67f, 1.5f, -1.5f, 1.5f)
             curveToRelative(-0.83f, 0.0f, -1.5f, -0.67f, -1.5f, -1.5f)
-            reflectiveCurveToRelative(0.67f, -1.5f, 1.5f, -1.5f)
-            reflectiveCurveToRelative(1.5f, 0.67f, 1.5f, 1.5f)
-            reflectiveCurveToRelative(-0.67f, 1.5f, -1.5f, 1.5f)
+            curveToRelative(0.0f, -0.83f, 0.67f, -1.5f, 1.5f, -1.5f)
             close()
         }
     }

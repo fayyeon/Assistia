@@ -66,6 +66,7 @@ fun AppActivitiesTab(
     activities: List<RemapAction>,
     isLoading: Boolean,
     selectedAction: RemapAction,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     onSelectAction: (RemapAction) -> Unit,
     onTestAction: (RemapAction) -> Unit
 ) {
@@ -120,7 +121,7 @@ fun AppActivitiesTab(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         items(groupedApps, key = { it.packageName }) { group ->

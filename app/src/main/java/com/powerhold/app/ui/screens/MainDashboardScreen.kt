@@ -3,41 +3,46 @@ package com.powerhold.app.ui.screens
 import android.app.role.RoleManager
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
@@ -50,17 +55,14 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -71,14 +73,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -87,6 +97,7 @@ import com.powerhold.app.ui.MainViewModel
 import com.powerhold.app.ui.theme.AppIcons
 import com.powerhold.app.ui.theme.PowerholdSerifFontFamily
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -185,6 +196,12 @@ fun MainDashboardScreen(
         }
     }
 
+    // Handle back button to close search mode smoothly
+    BackHandler(enabled = showSearch) {
+        showSearch = false
+        viewModel.setSearchQuery("")
+    }
+
     if (showAdbDialog) {
         AdbHelperDialog(onDismiss = { showAdbDialog = false })
     }
@@ -204,57 +221,253 @@ fun MainDashboardScreen(
         )
     }
 
-    // TopAppBar collapses on scroll down (Task 17)
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    // Collapsible Top Header dimensions & jitter-free smooth nested scroll connection
+    val maxHeaderHeight = 190.dp
+    val maxHeaderHeightPx = with(LocalDensity.current) { maxHeaderHeight.toPx() }
+    var headerOffsetPx by remember { mutableFloatStateOf(0f) }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            TopAppBar(
-                scrollBehavior = scrollBehavior,
-                title = {
-                    // Powerhold text moved to top-left corner, larger in serif font, opens About dialog (Task 17)
-                    Text(
-                        text = "Powerhold",
-                        fontFamily = PowerholdSerifFontFamily,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            showAboutDialog = true
-                        }
-                    )
-                },
-                actions = {
-                    // Theme selector button on top-right (Task 17)
-                    IconButton(onClick = { showThemeDialog = true }) {
+    val nestedScrollConnection = remember(maxHeaderHeightPx) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                // When scrolling DOWN (finger drags up, delta < 0), collapse header smoothly
+                if (delta < 0 && headerOffsetPx > -maxHeaderHeightPx) {
+                    val prev = headerOffsetPx
+                    headerOffsetPx = (headerOffsetPx + delta).coerceIn(-maxHeaderHeightPx, 0f)
+                    val consumed = headerOffsetPx - prev
+                    return Offset(0f, consumed)
+                }
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                // When scrolling UP (finger drags down, delta > 0) and content reached top, expand header
+                if (delta > 0 && headerOffsetPx < 0f) {
+                    val prev = headerOffsetPx
+                    headerOffsetPx = (headerOffsetPx + delta).coerceIn(-maxHeaderHeightPx, 0f)
+                    val consumed = headerOffsetPx - prev
+                    return Offset(0f, consumed)
+                }
+                return Offset.Zero
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(nestedScrollConnection)
+    ) {
+        // 1. Content: HorizontalPager swipable between Actions, Apps, and Activities
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            val tabPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = if (showSearch) 12.dp else (maxHeaderHeight + 8.dp),
+                bottom = 142.dp
+            )
+            when (page) {
+                0 -> QuickTogglesTab(
+                    toggles = quickToggles,
+                    selectedAction = selectedAction,
+                    hasAdbPermission = hasAdbPermission,
+                    contentPadding = tabPadding,
+                    onSelectAction = { viewModel.selectAction(it) },
+                    onTestAction = { viewModel.testAction(context, it) }
+                )
+                1 -> InstalledAppsTab(
+                    apps = apps,
+                    isLoading = isLoadingApps,
+                    selectedAction = selectedAction,
+                    contentPadding = tabPadding,
+                    onSelectAction = { viewModel.selectAction(it) },
+                    onTestAction = { viewModel.testAction(context, it) }
+                )
+                2 -> AppActivitiesTab(
+                    activities = activities,
+                    isLoading = isLoadingActivities,
+                    selectedAction = selectedAction,
+                    contentPadding = tabPadding,
+                    onSelectAction = { viewModel.selectAction(it) },
+                    onTestAction = { viewModel.testAction(context, it) }
+                )
+            }
+        }
+
+        // 2. Top Header (Pic 1): Powerhold title top-left, theme button near cards on the right.
+        // Smoothly collapses on scroll down; completely hidden when search is active.
+        if (!showSearch) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(maxHeaderHeight)
+                    .offset { IntOffset(0, headerOffsetPx.roundToInt()) }
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+            ) {
+                // "Powerhold" title in serif font (clicking opens About dialog)
+                Text(
+                    text = "Powerhold",
+                    fontFamily = PowerholdSerifFontFamily,
+                    fontSize = 34.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        showAboutDialog = true
+                    }
+                )
+
+                Spacer(Modifier.weight(1f))
+
+                // Theme button located on the right side slightly above the first card (Pic 1)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    IconButton(
+                        onClick = { showThemeDialog = true },
+                        modifier = Modifier.size(40.dp)
+                    ) {
                         Icon(
                             imageVector = AppIcons.Palette,
                             contentDescription = "Theme Settings",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                }
+            }
+        }
+
+        // 3. Docked Bottom Bar: Dynamic Test Trigger button + NavigationBar
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 3.dp,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    thickness = 1.dp
                 )
-            )
-        },
-        floatingActionButton = {
+
+                // Test Trigger button bar (Task 17)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = { viewModel.testAction(context) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(AppIcons.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = testButtonLabel,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    if (!isAssistantSet) {
+                        FilledTonalButton(
+                            onClick = onOpenAssistantSettings,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        ) {
+                            Text("Set as Assistant", fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+
+                // Bottom navigation bar with animated outline -> filled icons & expanding pills (Tasks 2, 8, Pic 3)
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp
+                ) {
+                    val navTabs = listOf(
+                        NavTabItem("Actions", AppIcons.Widgets, AppIcons.WidgetsOutlined, 0),
+                        NavTabItem("Apps", AppIcons.Apps, AppIcons.AppsOutlined, 1),
+                        NavTabItem("Activities", AppIcons.Code, AppIcons.CodeOutlined, 2)
+                    )
+
+                    navTabs.forEach { tab ->
+                        val isSelected = pagerState.currentPage == tab.index
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.15f else 1.0f,
+                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                            label = "iconScale"
+                        )
+
+                        NavigationBarItem(
+                            selected = isSelected,
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(tab.index)
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = if (isSelected) tab.filledIcon else tab.outlinedIcon,
+                                    contentDescription = tab.label,
+                                    modifier = Modifier.scale(iconScale)
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = tab.label,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // 4. Floating Action Buttons & Search Bar Layer
+        // Automatically moves with user's keyboard height (imePadding).
+        // When search is active, the search bar appears above the keyboard,
+        // and the Search/X button + ADB button float directly above the search bar.
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .fillMaxWidth()
+                .imePadding()
+                .padding(bottom = if (showSearch) 8.dp else 142.dp),
+            horizontalAlignment = Alignment.End
+        ) {
+            // Floating Action Buttons (ADB setup & Search / Close)
             Column(
+                modifier = Modifier.padding(end = 16.dp, bottom = if (showSearch) 8.dp else 0.dp),
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.imePadding()
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Secondary ADB Setup FAB directly above Search FAB, hidden once permission granted (Task 10)
+                // Secondary ADB Setup FAB directly above Search FAB, hidden once permission granted
                 AnimatedVisibility(
                     visible = !hasAdbPermission,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
                     FloatingActionButton(
                         onClick = { showAdbDialog = true },
@@ -271,7 +484,7 @@ fun MainDashboardScreen(
                     }
                 }
 
-                // Search Floating Action Button (Tasks 4, 10)
+                // Search Floating Action Button (switches to Close 'X' when search is open)
                 FloatingActionButton(
                     onClick = {
                         showSearch = !showSearch
@@ -287,119 +500,22 @@ fun MainDashboardScreen(
                     )
                 }
             }
-        },
-        bottomBar = {
-            // Docked Test Trigger button directly above Actions, Apps, Activities navigation bar (Task 17)
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 3.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                        thickness = 1.dp
-                    )
 
-                    // Test Trigger button bar (Task 17)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = { viewModel.testAction(context) },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            ),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Icon(AppIcons.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = testButtonLabel,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        if (!isAssistantSet) {
-                            FilledTonalButton(
-                                onClick = onOpenAssistantSettings,
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            ) {
-                                Text("Set as Assistant", fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                    }
-
-                    // Bottom navigation bar with animated outline -> filled icons & expanding pills (Tasks 2, 8, Pic 3)
-                    NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 0.dp
-                    ) {
-                        val navTabs = listOf(
-                            NavTabItem("Actions", AppIcons.Widgets, AppIcons.WidgetsOutlined, 0),
-                            NavTabItem("Apps", AppIcons.Apps, AppIcons.AppsOutlined, 1),
-                            NavTabItem("Activities", AppIcons.Code, AppIcons.CodeOutlined, 2)
-                        )
-
-                        navTabs.forEach { tab ->
-                            val isSelected = pagerState.currentPage == tab.index
-                            val iconScale by animateFloatAsState(
-                                targetValue = if (isSelected) 1.15f else 1.0f,
-                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                                label = "iconScale"
-                            )
-
-                            NavigationBarItem(
-                                selected = isSelected,
-                                onClick = {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(tab.index)
-                                    }
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = if (isSelected) tab.filledIcon else tab.outlinedIcon,
-                                        contentDescription = tab.label,
-                                        modifier = Modifier.scale(iconScale)
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        text = tab.label,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            // Animated Search Bar with smooth slide-down animation (Tasks 3, 4)
+            // Search Bar (slides in right above keyboard/bottom, with autofocus)
             AnimatedVisibility(
                 visible = showSearch,
-                enter = slideInVertically(initialOffsetY = { -it / 2 }) + expandVertically() + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { -it / 2 }) + shrinkVertically() + fadeOut()
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
             ) {
-                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    tonalElevation = 6.dp,
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { viewModel.setSearchQuery(it) },
@@ -424,36 +540,6 @@ fun MainDashboardScreen(
                     )
                 }
             }
-
-            // Swipeable HorizontalPager between Actions, Apps, and Activities (Task 9, Pic 4)
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) { page ->
-                when (page) {
-                    0 -> QuickTogglesTab(
-                        toggles = quickToggles,
-                        selectedAction = selectedAction,
-                        hasAdbPermission = hasAdbPermission,
-                        onSelectAction = { viewModel.selectAction(it) },
-                        onTestAction = { viewModel.testAction(context, it) }
-                    )
-                    1 -> InstalledAppsTab(
-                        apps = apps,
-                        isLoading = isLoadingApps,
-                        selectedAction = selectedAction,
-                        onSelectAction = { viewModel.selectAction(it) },
-                        onTestAction = { viewModel.testAction(context, it) }
-                    )
-                    2 -> AppActivitiesTab(
-                        activities = activities,
-                        isLoading = isLoadingActivities,
-                        selectedAction = selectedAction,
-                        onSelectAction = { viewModel.selectAction(it) },
-                        onTestAction = { viewModel.testAction(context, it) }
-                    )
-                }
-            }
         }
     }
 }
@@ -465,6 +551,15 @@ private data class NavTabItem(
     val index: Int
 )
 
+/**
+ * Visual Theme Selection Dialog designed to match Concept Pic 2:
+ * - Top-right "X" close button
+ * - Horizontal layout with 3 visual options:
+ *   1. Device Theme (B/W split circle + RadioButton + "Device Theme")
+ *   2. Light (White circle + RadioButton + "Light")
+ *   3. Dark (Grey/black circle as specified + RadioButton + "Dark")
+ * - Centered "Pure Black" checkbox at bottom (enabled when Dark mode is applicable)
+ */
 @Composable
 private fun ThemeChooserDialog(
     currentTheme: String,
@@ -476,83 +571,168 @@ private fun ThemeChooserDialog(
 ) {
     val isDarkActive = currentTheme == "DARK" || (currentTheme == "SYSTEM" && isSystemDark)
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Theme",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                val themeOptions = listOf(
-                    "SYSTEM" to "Device theme",
-                    "LIGHT" to "Light",
-                    "DARK" to "Dark"
-                )
-
-                themeOptions.forEach { (mode, label) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onThemeSelect(mode) }
-                            .padding(horizontal = 8.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Top-right close "X" button (Pic 2)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(32.dp)
                     ) {
-                        RadioButton(
-                            selected = currentTheme == mode,
-                            onClick = { onThemeSelect(mode) }
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = if (currentTheme == mode) FontWeight.Bold else FontWeight.Normal
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                // When user chooses dark or device theme is dark mode, provide pure black toggle (Task 17)
-                if (isDarkActive) {
-                    Spacer(Modifier.height(4.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(8.dp))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onAmoledToggle(!isAmoled) }
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                // Three horizontal theme options (Pic 2)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    // Option 1: Device Theme (B/W split circle)
+                    ThemeOptionItem(
+                        title = "Device\nTheme",
+                        isSelected = currentTheme == "SYSTEM",
+                        onClick = { onThemeSelect("SYSTEM") }
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Pure black (AMOLED)",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = "True black (#000000) for OLED screens",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        Box(
+                            modifier = Modifier
+                                .size(54.dp)
+                                .clip(CircleShape)
+                                .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), CircleShape)
+                        ) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                // Left half: Light
+                                drawArc(
+                                    color = Color.White,
+                                    startAngle = 90f,
+                                    sweepAngle = 180f,
+                                    useCenter = true
+                                )
+                                // Right half: Dark
+                                drawArc(
+                                    color = Color(0xFF262626),
+                                    startAngle = 270f,
+                                    sweepAngle = 180f,
+                                    useCenter = true
+                                )
+                            }
                         }
-                        Switch(
-                            checked = isAmoled,
-                            onCheckedChange = { onAmoledToggle(it) }
+                    }
+
+                    // Option 2: Light (Solid white circle)
+                    ThemeOptionItem(
+                        title = "Light\n",
+                        isSelected = currentTheme == "LIGHT",
+                        onClick = { onThemeSelect("LIGHT") }
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(54.dp)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                                .border(1.5.dp, Color(0xFFCCCCCC), CircleShape)
+                        )
+                    }
+
+                    // Option 3: Dark (Grey if set to pure black, black if not set to pure black, Pic 2)
+                    ThemeOptionItem(
+                        title = "Dark\n",
+                        isSelected = currentTheme == "DARK",
+                        onClick = { onThemeSelect("DARK") }
+                    ) {
+                        val circleColor = if (isAmoled) Color(0xFF6E6E6E) else Color(0xFF1A1A1A)
+                        Box(
+                            modifier = Modifier
+                                .size(54.dp)
+                                .clip(CircleShape)
+                                .background(circleColor)
+                                .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), CircleShape)
                         )
                     }
                 }
-            }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Done")
+
+                Spacer(Modifier.height(28.dp))
+
+                // Pure Black Checkbox (Pic 2)
+                val isCheckboxEnabled = isDarkActive
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(enabled = isCheckboxEnabled) { onAmoledToggle(!isAmoled) }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Checkbox(
+                        checked = isAmoled && isCheckboxEnabled,
+                        onCheckedChange = { if (isCheckboxEnabled) onAmoledToggle(it) },
+                        enabled = isCheckboxEnabled
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Pure Black",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isCheckboxEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
             }
         }
-    )
+    }
+}
+
+@Composable
+private fun ThemeOptionItem(
+    title: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+    ) {
+        icon()
+        Spacer(Modifier.height(10.dp))
+        RadioButton(
+            selected = isSelected,
+            onClick = onClick
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
 }
