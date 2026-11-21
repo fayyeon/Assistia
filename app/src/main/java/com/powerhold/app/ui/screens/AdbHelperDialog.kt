@@ -8,11 +8,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -35,7 +35,7 @@ fun AdbHelperDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val adbCmd = "adb shell pm grant com.powerhold.app android.permission.WRITE_SECURE_SETTINGS"
+    val adbCmd = "adb shell pm grant com.powerhold android.permission.WRITE_SECURE_SETTINGS"
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -48,21 +48,17 @@ fun AdbHelperDialog(
         },
         title = {
             Text(
-                text = "ADB Setup for Advanced Toggles",
+                text = "ADB Setup",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    text = "Most actions (Flashlight, Sound Mode, Auto-Rotate, DND, Apps, Activities) work 100% out-of-the-box on non-rooted phones without any setup.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = "To allow direct background toggling for Battery Saver, Night Light, or Color Inversion without opening their settings screens, grant WRITE_SECURE_SETTINGS via ADB once:",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Box(
@@ -79,19 +75,19 @@ fun AdbHelperDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
-                OutlinedButton(
-                    onClick = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("ADB Command", adbCmd))
-                        Toast.makeText(context, "Copied ADB command to clipboard", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(AppIcons.ContentCopy, contentDescription = null)
-                    Spacer(Modifier.padding(horizontal = 4.dp))
-                    Text("Copy ADB Command")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("ADB Command", adbCmd))
+                    Toast.makeText(context, "Copied ADB command to clipboard", Toast.LENGTH_SHORT).show()
                 }
+            ) {
+                Icon(AppIcons.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Copy ADB Command")
             }
         },
         confirmButton = {

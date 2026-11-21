@@ -1,5 +1,6 @@
 package com.powerhold.app.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,7 +89,7 @@ fun QuickToggleItemCard(
     onTest: () -> Unit
 ) {
     val icon = getToggleIcon(action.toggleKey)
-    val subtitleText = if (action.requiresAdb && hasAdbPermission) "" else action.subtitle
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     Card(
         modifier = Modifier
@@ -100,7 +103,7 @@ fun QuickToggleItemCard(
                 MaterialTheme.colorScheme.surfaceVariant
         ),
         shape = RoundedCornerShape(20.dp),
-        border = if (!isSelected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)) else null
+        border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)) else null
     ) {
         Row(
             modifier = Modifier
@@ -142,10 +145,38 @@ fun QuickToggleItemCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (subtitleText.isNotBlank()) {
+
+                // Warning badge for toggles requiring ADB (Task 15)
+                if (action.requiresAdb && !hasAdbPermission) {
+                    Spacer(Modifier.height(4.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isDark) Color(0xFF423400) else Color(0xFFFFF3CD),
+                        border = BorderStroke(1.dp, if (isDark) Color(0xFFFFC107).copy(alpha = 0.4f) else Color(0xFFFFC107).copy(alpha = 0.6f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = AppIcons.Warning,
+                                contentDescription = null,
+                                tint = if (isDark) Color(0xFFFFD54F) else Color(0xFF856404),
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = "Requires ADB to work properly",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isDark) Color(0xFFFFD54F) else Color(0xFF856404)
+                            )
+                        }
+                    }
+                } else if (action.subtitle.isNotBlank() && !action.requiresAdb) {
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = subtitleText,
+                        text = action.subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,

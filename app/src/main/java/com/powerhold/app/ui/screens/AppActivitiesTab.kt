@@ -263,6 +263,7 @@ fun AppGroupCard(
                         val isSelected = action.id == selectedAction.id
                         SubActivityItemRow(
                             action = action,
+                            appName = group.appName,
                             isSelected = isSelected,
                             onClick = { onSelectAction(action) },
                             onTest = { onTestAction(action) }
@@ -277,10 +278,18 @@ fun AppGroupCard(
 @Composable
 fun SubActivityItemRow(
     action: RemapAction,
+    appName: String,
     isSelected: Boolean,
     onClick: () -> Unit,
     onTest: () -> Unit
 ) {
+    // Avoid showing app name twice: show distinct activity label or simple name (Task 6)
+    val displayTitle = if (action.title.equals(appName, ignoreCase = true)) {
+        action.activityName?.substringAfterLast('.') ?: action.title
+    } else {
+        action.title
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -293,7 +302,7 @@ fun SubActivityItemRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 16.dp, vertical = if (isSelected) 12.dp else 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
@@ -306,7 +315,7 @@ fun SubActivityItemRow(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = AppIcons.Code,
+                        imageVector = if (isSelected) AppIcons.Code else AppIcons.CodeOutlined,
                         contentDescription = null,
                         tint = if (isSelected)
                             MaterialTheme.colorScheme.onPrimary
@@ -321,22 +330,25 @@ fun SubActivityItemRow(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = action.title,
+                    text = displayTitle,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.height(1.dp))
+                Spacer(Modifier.height(2.dp))
+
+                // When selected: show full codename over 2+ lines without ellipsis (Task 7)
                 Text(
                     text = action.activityName ?: "",
                     style = MaterialTheme.typography.labelSmall,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 11.sp,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = if (isSelected) Int.MAX_VALUE else 1,
+                    overflow = if (isSelected) TextOverflow.Visible else TextOverflow.Ellipsis,
+                    softWrap = isSelected
                 )
             }
 

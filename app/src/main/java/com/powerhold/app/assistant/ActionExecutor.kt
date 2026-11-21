@@ -86,13 +86,9 @@ object ActionExecutor {
                 context = context,
                 settingKey = "night_display_activated",
                 isGlobal = false,
-                friendlyName = "Eye Protection (Night Light)",
+                friendlyName = "Night Light",
                 fallbackIntent = Intent(Settings.ACTION_NIGHT_DISPLAY_SETTINGS)
             )
-            "bluetooth" -> {
-                openIntentSafely(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
-                showToast(context, "Bluetooth settings opened")
-            }
             "wifi" -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     val opened = tryOpenIntent(context, Intent("android.settings.panel.action.INTERNET_CONNECTIVITY"))
@@ -114,22 +110,6 @@ object ActionExecutor {
                     openIntentSafely(context, Intent(Settings.ACTION_DATA_ROAMING_SETTINGS))
                 }
                 showToast(context, "Mobile Data settings opened")
-            }
-            "airplane_mode" -> {
-                openIntentSafely(context, Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS))
-                showToast(context, "Airplane Mode settings opened")
-            }
-            "data_saver" -> {
-                openIntentSafely(context, Intent("android.settings.DATA_SAVER_SETTINGS"))
-                showToast(context, "Data Saver settings opened")
-            }
-            "location" -> {
-                openIntentSafely(context, Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                showToast(context, "Location settings opened")
-            }
-            "camera_access", "microphone_access" -> {
-                openIntentSafely(context, Intent(Settings.ACTION_PRIVACY_SETTINGS))
-                showToast(context, "Privacy settings opened")
             }
             else -> {
                 showToast(context, "Triggered: ${action.title}")

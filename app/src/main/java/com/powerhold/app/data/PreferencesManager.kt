@@ -28,6 +28,7 @@ class PreferencesManager(private val context: Context) {
         val IS_NON_ROOT_DIRECT = booleanPreferencesKey("is_non_root_direct")
         val TORCH_STATE = booleanPreferencesKey("torch_state")
         val AMOLED_MODE = booleanPreferencesKey("amoled_mode")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
     }
 
     val selectedActionFlow: Flow<RemapAction> = context.dataStore.data.map { prefs ->
@@ -89,6 +90,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setAmoledMode(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[Keys.AMOLED_MODE] = enabled
+        }
+    }
+
+    val themeModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.THEME_MODE] ?: "SYSTEM"
+    }
+
+    suspend fun setThemeMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.THEME_MODE] = mode
         }
     }
 }

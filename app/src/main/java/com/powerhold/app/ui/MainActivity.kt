@@ -35,9 +35,17 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val isAmoledMode by viewModel.isAmoledMode.collectAsState()
+            val themeMode by viewModel.themeMode.collectAsState()
+            val systemDark = isSystemInDarkTheme()
+
+            val isDarkTheme = when (themeMode) {
+                "LIGHT" -> false
+                "DARK" -> true
+                else -> systemDark
+            }
 
             PowerholdTheme(
-                darkTheme = isSystemInDarkTheme(),
+                darkTheme = isDarkTheme,
                 amoledMode = isAmoledMode
             ) {
                 MainDashboardScreen(

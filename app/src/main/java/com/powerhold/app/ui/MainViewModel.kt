@@ -26,6 +26,9 @@ class MainViewModel : ViewModel() {
     val isAmoledMode: StateFlow<Boolean> = prefsManager.amoledModeFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val themeMode: StateFlow<String> = prefsManager.themeModeFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "SYSTEM")
+
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab
 
@@ -82,6 +85,12 @@ class MainViewModel : ViewModel() {
     fun setAmoledMode(enabled: Boolean) {
         viewModelScope.launch {
             prefsManager.setAmoledMode(enabled)
+        }
+    }
+
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch {
+            prefsManager.setThemeMode(mode)
         }
     }
 

@@ -4,15 +4,6 @@ object QuickToggleRepository {
 
     val allToggles: List<RemapAction> = listOf(
         RemapAction(
-            id = "toggle_airplane_mode",
-            type = ActionType.QUICK_TOGGLE,
-            title = "Airplane Mode",
-            subtitle = "",
-            toggleKey = "airplane_mode",
-            requiresAdb = false,
-            isNonRootDirect = false
-        ),
-        RemapAction(
             id = "toggle_auto_rotate",
             type = ActionType.QUICK_TOGGLE,
             title = "Auto-Rotate",
@@ -31,14 +22,6 @@ object QuickToggleRepository {
             isNonRootDirect = false
         ),
         RemapAction(
-            id = "toggle_bluetooth",
-            type = ActionType.QUICK_TOGGLE,
-            title = "Bluetooth",
-            subtitle = "",
-            toggleKey = "bluetooth",
-            isNonRootDirect = true
-        ),
-        RemapAction(
             id = "toggle_color_inversion",
             type = ActionType.QUICK_TOGGLE,
             title = "Color Inversion",
@@ -48,17 +31,9 @@ object QuickToggleRepository {
             isNonRootDirect = false
         ),
         RemapAction(
-            id = "toggle_data_saver",
-            type = ActionType.QUICK_TOGGLE,
-            title = "Data Saver Settings",
-            subtitle = "",
-            toggleKey = "data_saver",
-            isNonRootDirect = true
-        ),
-        RemapAction(
             id = "toggle_dnd",
             type = ActionType.QUICK_TOGGLE,
-            title = "Do Not Disturb (DND)",
+            title = "Do Not Disturb",
             subtitle = "",
             toggleKey = "dnd",
             requiresPermission = "android.permission.ACCESS_NOTIFICATION_POLICY",
@@ -67,7 +42,7 @@ object QuickToggleRepository {
         RemapAction(
             id = "toggle_eye_protection",
             type = ActionType.QUICK_TOGGLE,
-            title = "Eye Protection / Night Light",
+            title = "Night Light",
             subtitle = "Requires ADB to work properly",
             toggleKey = "eye_protection",
             requiresAdb = true,
@@ -80,15 +55,6 @@ object QuickToggleRepository {
             subtitle = "",
             toggleKey = "flashlight",
             isNonRootDirect = true
-        ),
-        RemapAction(
-            id = "toggle_location",
-            type = ActionType.QUICK_TOGGLE,
-            title = "Location",
-            subtitle = "",
-            toggleKey = "location",
-            requiresAdb = false,
-            isNonRootDirect = false
         ),
         RemapAction(
             id = "toggle_mobile_data",

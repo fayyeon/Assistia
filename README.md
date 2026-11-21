@@ -21,7 +21,7 @@ Powerhold handles this gracefully:
 - **With ADB (Optional)**: If you run this single command once from a PC or on-device wireless debugging tool (such as Shizuku), Remapper gains permission to toggle them silently in the background:
 
 ```bash
-adb shell pm grant com.powerhold.app android.permission.WRITE_SECURE_SETTINGS
+adb shell pm grant com.powerhold android.permission.WRITE_SECURE_SETTINGS
 ```
 
 ---

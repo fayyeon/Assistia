@@ -28,6 +28,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -80,17 +82,21 @@ fun AboutAppDialog(
 
                 Spacer(Modifier.height(4.dp))
 
-                // App logo that follows device theme (similar to adaptive themed icon)
+                val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+                val circleColor = if (isDark) Color(0xFFD4D4D4) else Color(0xFF3B3B3B)
+                val iconColor = if (isDark) Color(0xFFFFFFFF) else Color(0xFF171717)
+
+                // App logo that follows device theme (Pic 1)
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = circleColor,
                     modifier = Modifier.size(92.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = AppIcons.Power,
                             contentDescription = "Powerhold Logo",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = iconColor,
                             modifier = Modifier.size(48.dp)
                         )
                     }

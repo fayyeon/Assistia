@@ -8,7 +8,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.powerhold.app"
+        applicationId = "com.powerhold"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
