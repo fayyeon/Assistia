@@ -8,6 +8,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
@@ -23,12 +24,12 @@ private val DarkColorScheme = darkColorScheme(
     onTertiary = OnTertiaryDark,
     tertiaryContainer = TertiaryContainerDark,
     onTertiaryContainer = OnTertiaryContainerDark,
-    background = BackgroundDark,
-    onBackground = OnBackgroundDark,
-    surface = SurfaceDark,
-    onSurface = OnSurfaceDark,
-    surfaceVariant = SurfaceVariantDark,
-    onSurfaceVariant = OnSurfaceVariantDark
+    background = Color(0xFF121212),
+    onBackground = Color(0xFFFFFFFF),
+    surface = Color(0xFF121212),
+    onSurface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFF1E1E1E),
+    onSurfaceVariant = Color(0xFFE0E0E0)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -44,23 +45,22 @@ private val LightColorScheme = lightColorScheme(
     onTertiary = OnTertiaryLight,
     tertiaryContainer = TertiaryContainerLight,
     onTertiaryContainer = OnTertiaryContainerLight,
-    background = BackgroundLight,
-    onBackground = OnBackgroundLight,
-    surface = SurfaceLight,
-    onSurface = OnSurfaceLight,
-    surfaceVariant = SurfaceVariantLight,
-    onSurfaceVariant = OnSurfaceVariantLight
+    background = Color(0xFFFFFFFF),
+    onBackground = Color(0xFF000000),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF000000),
+    surfaceVariant = Color(0xFFF1F3F5),
+    onSurfaceVariant = Color(0xFF44474E)
 )
 
 @Composable
 fun PowerholdTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     amoledMode: Boolean = false,
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val baseColorScheme = when {
-        // Dynamic color follows the user's wallpaper & device default theme (Android 12+)
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -71,13 +71,15 @@ fun PowerholdTheme(
 
     val colorScheme = if (darkTheme && amoledMode) {
         baseColorScheme.copy(
-            background = androidx.compose.ui.graphics.Color(0xFF000000),
-            surface = androidx.compose.ui.graphics.Color(0xFF000000),
-            surfaceVariant = androidx.compose.ui.graphics.Color(0xFF141414),
-            surfaceContainer = androidx.compose.ui.graphics.Color(0xFF080808),
-            surfaceContainerLow = androidx.compose.ui.graphics.Color(0xFF040404),
-            surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF1C1C1C),
-            surfaceContainerHighest = androidx.compose.ui.graphics.Color(0xFF242424)
+            background = Color(0xFF000000),
+            surface = Color(0xFF000000),
+            surfaceVariant = Color(0xFF141414),
+            surfaceContainer = Color(0xFF080808),
+            surfaceContainerLow = Color(0xFF040404),
+            surfaceContainerHigh = Color(0xFF1C1C1C),
+            surfaceContainerHighest = Color(0xFF242424),
+            onBackground = Color(0xFFFFFFFF),
+            onSurface = Color(0xFFFFFFFF)
         )
     } else {
         baseColorScheme
