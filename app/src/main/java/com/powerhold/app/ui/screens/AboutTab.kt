@@ -5,11 +5,11 @@ import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -32,9 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.powerhold.app.ui.theme.AppIcons
 
 @Composable
-fun AboutTab(
-    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
-) {
+fun AboutTab() {
     val context = LocalContext.current
     val versionName = try {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0.0"
@@ -49,7 +47,8 @@ fun AboutTab(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(contentPadding),
+            .navigationBarsPadding()
+            .padding(start = 16.dp, end = 16.dp, bottom = 104.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(

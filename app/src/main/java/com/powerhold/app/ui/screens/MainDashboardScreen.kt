@@ -281,7 +281,19 @@ fun MainDashboardScreen(
         },
         label = "collapseFraction"
     )
-    val currentHeaderHeight = lerp(expandedHeaderHeight, collapsedHeaderHeight, effectiveCollapseFraction)
+    val currentHeaderHeight by animateDpAsState(
+        targetValue = when {
+            showSearch -> collapsedHeaderHeight
+            pagerState.currentPage == 4 -> 72.dp
+            else -> lerp(expandedHeaderHeight, collapsedHeaderHeight, effectiveCollapseFraction)
+        },
+        animationSpec = if (isNonScrollHeader) {
+            tween(durationMillis = 220, easing = FastOutSlowInEasing)
+        } else {
+            snap()
+        },
+        label = "headerHeight"
+    )
 
     val nestedScrollConnection = remember(collapseRangePx) {
         object : NestedScrollConnection {
@@ -405,14 +417,7 @@ fun MainDashboardScreen(
                             onSelectAction = { viewModel.selectAction(it) },
                             onTestAction = { viewModel.testAction(context, it) }
                         )
-                        4 -> AboutTab(
-                            contentPadding = PaddingValues(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 8.dp,
-                                bottom = 110.dp
-                            )
-                        )
+                        4 -> AboutTab()
                     }
                 }
             }
