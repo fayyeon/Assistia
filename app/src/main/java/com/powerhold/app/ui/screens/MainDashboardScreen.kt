@@ -35,7 +35,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.displayCutoutPadding
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,6 +43,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -60,12 +61,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -378,77 +376,31 @@ fun MainDashboardScreen(
                             onHideKeyboard = { keyboardController?.hide() }
                         )
 
-                        // Floating Test Trigger button placed below the search button (hidden while typing in search)
+                        // Floating Test Trigger & Set as Assistant row placed below the search button
                         if (!showSearch) {
                             Spacer(Modifier.height(10.dp))
-                            Row(
-                                modifier = Modifier.padding(end = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                if (!isAssistantSet) {
-                                    Surface(
-                                        onClick = onOpenAssistantSettings,
-                                        shape = RoundedCornerShape(16.dp),
-                                        color = MaterialTheme.colorScheme.surfaceVariant,
-                                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        shadowElevation = 4.dp,
-                                        modifier = Modifier.height(56.dp)
-                                    ) {
-                                        Box(
-                                            contentAlignment = Alignment.Center,
-                                            modifier = Modifier.padding(horizontal = 16.dp)
-                                        ) {
-                                            Text(
-                                                text = "Set as Assistant",
-                                                fontWeight = FontWeight.SemiBold,
-                                                style = MaterialTheme.typography.labelLarge
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Surface(
-                                    onClick = { viewModel.testAction(context) },
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                    shadowElevation = 6.dp,
-                                    modifier = Modifier
-                                        .height(56.dp)
-                                        .widthIn(min = 56.dp, max = 340.dp)
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(horizontal = 16.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = AppIcons.PlayArrow,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            text = testButtonLabel,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            fontWeight = FontWeight.SemiBold,
-                                            style = MaterialTheme.typography.labelLarge
-                                        )
-                                    }
-                                }
-                            }
+                            FloatingTriggerActionsRow(
+                                testButtonLabel = testButtonLabel,
+                                isAssistantSet = isAssistantSet,
+                                maxTriggerWidth = 340.dp,
+                                onTestAction = { viewModel.testAction(context) },
+                                onOpenAssistantSettings = onOpenAssistantSettings
+                            )
                         }
                     }
                 }
 
-                // Right-side vertical navigation bar
+                // Right-side vertical navigation bar (strictly 48dp + end system nav inset only)
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 3.dp,
                     modifier = Modifier.fillMaxHeight()
                 ) {
-                    Row(modifier = Modifier.fillMaxHeight()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.End))
+                    ) {
                         VerticalDivider(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                             thickness = 1.dp
@@ -456,9 +408,8 @@ fun MainDashboardScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxHeight()
-                                .navigationBarsPadding()
-                                .displayCutoutPadding()
-                                .width(52.dp),
+                                .statusBarsPadding()
+                                .width(48.dp),
                             verticalArrangement = Arrangement.SpaceEvenly,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -636,7 +587,7 @@ fun MainDashboardScreen(
                     )
                 }
 
-                // Docked Bottom Bar: FIXED at bottom (no imePadding, covered by keyboard when active)
+                // Docked Bottom Bar: FIXED at bottom (icon-only nav bar, no imePadding)
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 3.dp,
@@ -649,56 +600,6 @@ fun MainDashboardScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                             thickness = 1.dp
                         )
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Button(
-                                onClick = { viewModel.testAction(context) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(38.dp),
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                ),
-                                shape = RoundedCornerShape(14.dp)
-                            ) {
-                                Icon(AppIcons.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text(
-                                    text = testButtonLabel,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    fontWeight = FontWeight.SemiBold,
-                                    style = MaterialTheme.typography.labelLarge
-                                )
-                            }
-
-                            if (!isAssistantSet) {
-                                FilledTonalButton(
-                                    onClick = onOpenAssistantSettings,
-                                    modifier = Modifier.height(38.dp),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                                    shape = RoundedCornerShape(14.dp),
-                                    colors = ButtonDefaults.filledTonalButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                ) {
-                                    Text(
-                                        text = "Set as Assistant",
-                                        fontWeight = FontWeight.SemiBold,
-                                        style = MaterialTheme.typography.labelLarge
-                                    )
-                                }
-                            }
-                        }
 
                         Row(
                             modifier = Modifier
@@ -727,14 +628,14 @@ fun MainDashboardScreen(
                     }
                 }
 
-                // Floating ADB & Morphing Search layer (only moves with keyboard)
+                // Floating Search + Test Trigger + Set as Assistant layer (portrait)
                 val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))
-                        .padding(bottom = if (isImeVisible) 8.dp else 112.dp),
+                        .padding(bottom = if (isImeVisible) 8.dp else 64.dp),
                     horizontalAlignment = Alignment.End
                 ) {
                     SearchAndAdbControls(
@@ -748,6 +649,17 @@ fun MainDashboardScreen(
                         onCloseSearch = { showSearch = false },
                         onHideKeyboard = { keyboardController?.hide() }
                     )
+
+                    if (!showSearch && !isImeVisible) {
+                        Spacer(Modifier.height(10.dp))
+                        FloatingTriggerActionsRow(
+                            testButtonLabel = testButtonLabel,
+                            isAssistantSet = isAssistantSet,
+                            maxTriggerWidth = 240.dp,
+                            onTestAction = { viewModel.testAction(context) },
+                            onOpenAssistantSettings = onOpenAssistantSettings
+                        )
+                    }
                 }
             }
         }
@@ -906,6 +818,78 @@ private fun SearchAndAdbControls(
 }
 
 @Composable
+private fun FloatingTriggerActionsRow(
+    testButtonLabel: String,
+    isAssistantSet: Boolean,
+    maxTriggerWidth: androidx.compose.ui.unit.Dp,
+    onTestAction: () -> Unit,
+    onOpenAssistantSettings: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (!isAssistantSet) {
+            Surface(
+                onClick = onOpenAssistantSettings,
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shadowElevation = 6.dp,
+                modifier = Modifier.height(56.dp)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.padding(horizontal = 14.dp)
+                ) {
+                    Text(
+                        text = "Set as Assistant",
+                        maxLines = 1,
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        Surface(
+            onClick = onTestAction,
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            shadowElevation = 6.dp,
+            modifier = Modifier
+                .height(56.dp)
+                .widthIn(min = 56.dp, max = maxTriggerWidth)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) {
+                Icon(
+                    imageVector = AppIcons.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = testButtonLabel,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun NavBarIconItem(
     tab: NavTabItem,
     isSelected: Boolean,
@@ -919,7 +903,7 @@ private fun NavBarIconItem(
         label = "iconScale"
     )
     val pillSize by animateDpAsState(
-        targetValue = if (isSelected) (if (isVerticalBar) 38.dp else 54.dp) else 0.dp,
+        targetValue = if (isSelected) (if (isVerticalBar) 36.dp else 54.dp) else 0.dp,
         animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
         label = "pillSize"
     )

@@ -76,8 +76,8 @@ fun WebsiteTab(
 
     val bottomPadding = when {
         isImeVisible -> 8.dp
-        isLandscape -> 80.dp // Leaves room for floating Test Trigger button below in landscape
-        else -> 112.dp
+        isLandscape -> 80.dp
+        else -> 132.dp
     }
 
     Column(
