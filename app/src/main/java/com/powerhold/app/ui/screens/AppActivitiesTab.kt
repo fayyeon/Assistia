@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -153,9 +154,9 @@ fun AppGroupCard(
     onSelectAction: (RemapAction) -> Unit,
     onTestAction: (RemapAction) -> Unit
 ) {
-    val appIconDrawable: Drawable? = remember(group.packageName) {
+    val appIconBitmap: ImageBitmap? = remember(group.packageName) {
         try {
-            context.packageManager.getApplicationIcon(group.packageName)
+            context.packageManager.getApplicationIcon(group.packageName).toBitmap(96, 96).asImageBitmap()
         } catch (e: Exception) {
             null
         }
@@ -191,9 +192,9 @@ fun AppGroupCard(
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        if (appIconDrawable != null) {
+                        if (appIconBitmap != null) {
                             Image(
-                                bitmap = appIconDrawable.toBitmap(96, 96).asImageBitmap(),
+                                bitmap = appIconBitmap,
                                 contentDescription = group.appName,
                                 modifier = Modifier.size(34.dp)
                             )

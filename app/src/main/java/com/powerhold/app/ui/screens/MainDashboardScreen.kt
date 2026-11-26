@@ -7,9 +7,11 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
@@ -88,6 +90,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -262,14 +266,19 @@ fun MainDashboardScreen(
     var headerOffsetPx by remember { mutableFloatStateOf(0f) }
 
     val scrollCollapseFraction = (-headerOffsetPx / collapseRangePx).coerceIn(0f, 1f)
+    val isNonScrollHeader = showSearch || pagerState.currentPage == 1 || pagerState.currentPage == 4
     val targetCollapseFraction = when {
-        showSearch || pagerState.currentPage == 4 -> 1f
-        pagerState.currentPage == 1 -> 0f
+        showSearch -> 1f
+        pagerState.currentPage == 1 || pagerState.currentPage == 4 -> 0f
         else -> scrollCollapseFraction
     }
     val effectiveCollapseFraction by animateFloatAsState(
         targetValue = targetCollapseFraction,
-        animationSpec = tween(durationMillis = 180),
+        animationSpec = if (isNonScrollHeader) {
+            tween(durationMillis = 220, easing = FastOutSlowInEasing)
+        } else {
+            snap()
+        },
         label = "collapseFraction"
     )
     val currentHeaderHeight = lerp(expandedHeaderHeight, collapsedHeaderHeight, effectiveCollapseFraction)
@@ -320,12 +329,18 @@ fun MainDashboardScreen(
                     Text(
                         text = pageTitle,
                         fontFamily = PowerholdSerifFontFamily,
-                        fontSize = lerp(40f, 22f, effectiveCollapseFraction).sp,
+                        fontSize = 40.sp,
                         fontWeight = FontWeight.Normal,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .align(Alignment.TopStart)
-                            .padding(top = lerp(16.dp, 12.dp, effectiveCollapseFraction))
+                            .padding(top = lerp(16.dp, 8.dp, effectiveCollapseFraction))
+                            .graphicsLayer {
+                                val titleScale = lerp(1f, 0.55f, effectiveCollapseFraction)
+                                scaleX = titleScale
+                                scaleY = titleScale
+                                transformOrigin = TransformOrigin(0f, 0.5f)
+                            }
                     )
 
                     if (pagerState.currentPage != 1 && pagerState.currentPage != 4) {
@@ -492,7 +507,7 @@ fun MainDashboardScreen(
                             )
                             val pillWidth by animateDpAsState(
                                 targetValue = if (isSelected) 54.dp else 0.dp,
-                                animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy),
+                                animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
                                 label = "pillWidth"
                             )
 

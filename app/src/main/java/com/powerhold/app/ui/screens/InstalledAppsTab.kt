@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -113,9 +114,11 @@ fun AppItemCard(
     onClick: () -> Unit,
     onTest: () -> Unit
 ) {
-    val appIconDrawable: Drawable? = remember(action.packageName) {
+    val appIconBitmap: ImageBitmap? = remember(action.packageName) {
         try {
-            action.packageName?.let { context.packageManager.getApplicationIcon(it) }
+            action.packageName?.let {
+                context.packageManager.getApplicationIcon(it).toBitmap(96, 96).asImageBitmap()
+            }
         } catch (e: Exception) {
             null
         }
@@ -147,9 +150,9 @@ fun AppItemCard(
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    if (appIconDrawable != null) {
+                    if (appIconBitmap != null) {
                         Image(
-                            bitmap = appIconDrawable.toBitmap(96, 96).asImageBitmap(),
+                            bitmap = appIconBitmap,
                             contentDescription = action.title,
                             modifier = Modifier.size(36.dp)
                         )
