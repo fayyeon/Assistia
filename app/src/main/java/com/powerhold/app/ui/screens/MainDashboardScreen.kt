@@ -299,18 +299,34 @@ fun MainDashboardScreen(
                             )
 
                             if (pagerState.currentPage != 1 && pagerState.currentPage != 4) {
-                                IconButton(
-                                    onClick = { showThemeDialog = true },
-                                    modifier = Modifier
-                                        .align(Alignment.CenterEnd)
-                                        .size(48.dp)
+                                Row(
+                                    modifier = Modifier.align(Alignment.CenterEnd),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = AppIcons.Paintbrush,
-                                        contentDescription = "Theme Settings",
-                                        tint = MaterialTheme.colorScheme.onBackground,
-                                        modifier = Modifier.size(24.dp)
-                                    )
+                                    if (!hasAdbPermission && pagerState.currentPage == 0) {
+                                        IconButton(
+                                            onClick = { showAdbDialog = true },
+                                            modifier = Modifier.size(48.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = AppIcons.Terminal,
+                                                contentDescription = "ADB Setup",
+                                                tint = MaterialTheme.colorScheme.onBackground,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                    }
+                                    IconButton(
+                                        onClick = { showThemeDialog = true },
+                                        modifier = Modifier.size(48.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = AppIcons.Paintbrush,
+                                            contentDescription = "Theme Settings",
+                                            tint = MaterialTheme.colorScheme.onBackground,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -353,14 +369,12 @@ fun MainDashboardScreen(
                         SearchAndAdbControls(
                             showSearch = showSearch,
                             isSearchablePage = isSearchablePage,
-                            showAdbFab = !hasAdbPermission && pagerState.currentPage == 0,
                             searchQuery = searchQuery,
                             searchPlaceholder = searchPlaceholder,
                             focusRequester = focusRequester,
                             onQueryChange = { viewModel.setSearchQuery(it) },
                             onOpenSearch = { showSearch = true },
                             onCloseSearch = { showSearch = false },
-                            onOpenAdb = { showAdbDialog = true },
                             onHideKeyboard = { keyboardController?.hide() }
                         )
 
@@ -444,7 +458,7 @@ fun MainDashboardScreen(
                                 .fillMaxHeight()
                                 .navigationBarsPadding()
                                 .displayCutoutPadding()
-                                .width(64.dp),
+                                .width(52.dp),
                             verticalArrangement = Arrangement.SpaceEvenly,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -562,19 +576,36 @@ fun MainDashboardScreen(
                         )
 
                         if (pagerState.currentPage != 1 && pagerState.currentPage != 4) {
-                            IconButton(
-                                onClick = { showThemeDialog = true },
+                            Row(
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
-                                    .padding(bottom = lerp(8.dp, 2.dp, effectiveCollapseFraction))
-                                    .size(48.dp)
+                                    .padding(bottom = lerp(8.dp, 2.dp, effectiveCollapseFraction)),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = AppIcons.Paintbrush,
-                                    contentDescription = "Theme Settings",
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(26.dp)
-                                )
+                                if (!hasAdbPermission && pagerState.currentPage == 0) {
+                                    IconButton(
+                                        onClick = { showAdbDialog = true },
+                                        modifier = Modifier.size(48.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = AppIcons.Terminal,
+                                            contentDescription = "ADB Setup",
+                                            tint = MaterialTheme.colorScheme.onBackground,
+                                            modifier = Modifier.size(25.dp)
+                                        )
+                                    }
+                                }
+                                IconButton(
+                                    onClick = { showThemeDialog = true },
+                                    modifier = Modifier.size(48.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = AppIcons.Paintbrush,
+                                        contentDescription = "Theme Settings",
+                                        tint = MaterialTheme.colorScheme.onBackground,
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -709,14 +740,12 @@ fun MainDashboardScreen(
                     SearchAndAdbControls(
                         showSearch = showSearch,
                         isSearchablePage = isSearchablePage,
-                        showAdbFab = !hasAdbPermission && pagerState.currentPage == 0,
                         searchQuery = searchQuery,
                         searchPlaceholder = searchPlaceholder,
                         focusRequester = focusRequester,
                         onQueryChange = { viewModel.setSearchQuery(it) },
                         onOpenSearch = { showSearch = true },
                         onCloseSearch = { showSearch = false },
-                        onOpenAdb = { showAdbDialog = true },
                         onHideKeyboard = { keyboardController?.hide() }
                     )
                 }
@@ -788,38 +817,14 @@ private fun DashboardPager(
 private fun SearchAndAdbControls(
     showSearch: Boolean,
     isSearchablePage: Boolean,
-    showAdbFab: Boolean,
     searchQuery: String,
     searchPlaceholder: String,
     focusRequester: FocusRequester,
     onQueryChange: (String) -> Unit,
     onOpenSearch: () -> Unit,
     onCloseSearch: () -> Unit,
-    onOpenAdb: () -> Unit,
     onHideKeyboard: () -> Unit
 ) {
-    AnimatedVisibility(
-        visible = showAdbFab,
-        enter = fadeIn(),
-        exit = fadeOut()
-    ) {
-        FloatingActionButton(
-            onClick = onOpenAdb,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .padding(end = 16.dp, bottom = 10.dp)
-                .size(48.dp)
-        ) {
-            Icon(
-                imageVector = AppIcons.Terminal,
-                contentDescription = "ADB Setup",
-                modifier = Modifier.size(22.dp)
-            )
-        }
-    }
-
     if (isSearchablePage || showSearch) {
         AnimatedContent(
             targetState = showSearch,
@@ -914,7 +919,7 @@ private fun NavBarIconItem(
         label = "iconScale"
     )
     val pillSize by animateDpAsState(
-        targetValue = if (isSelected) (if (isVerticalBar) 44.dp else 54.dp) else 0.dp,
+        targetValue = if (isSelected) (if (isVerticalBar) 38.dp else 54.dp) else 0.dp,
         animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
         label = "pillSize"
     )
@@ -931,7 +936,7 @@ private fun NavBarIconItem(
             Box(
                 modifier = Modifier
                     .width(pillSize)
-                    .height(if (isVerticalBar) 36.dp else 30.dp)
+                    .height(if (isVerticalBar) 32.dp else 30.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.secondaryContainer)
             )
@@ -944,7 +949,7 @@ private fun NavBarIconItem(
             else
                 MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
-                .size(22.dp)
+                .size(if (isVerticalBar) 20.dp else 22.dp)
                 .scale(iconScale)
         )
     }
