@@ -67,9 +67,6 @@ android {
         includeInApk = false
         includeInBundle = false
     }
-    vcsInfo {
-        include = false
-    }
 }
 
 dependencies {
