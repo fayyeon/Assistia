@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -250,19 +251,24 @@ fun MainDashboardScreen(
         )
     }
 
-    // Samsung One UI collapsing header dimensions
+    // Samsung One UI collapsing header dimensions (below status bar)
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
-    val expandedHeaderHeight = (screenHeight * 0.44f).coerceAtLeast(280.dp)
-    val collapsedHeaderHeight = 92.dp
+    val expandedHeaderHeight = (screenHeight * 0.40f).coerceAtLeast(250.dp)
+    val collapsedHeaderHeight = 52.dp
     val collapseRangePx = with(LocalDensity.current) {
         (expandedHeaderHeight - collapsedHeaderHeight).toPx().coerceAtLeast(1f)
     }
     var headerOffsetPx by remember { mutableFloatStateOf(0f) }
 
     val scrollCollapseFraction = (-headerOffsetPx / collapseRangePx).coerceIn(0f, 1f)
+    val targetCollapseFraction = when {
+        showSearch || pagerState.currentPage == 4 -> 1f
+        pagerState.currentPage == 1 -> 0f
+        else -> scrollCollapseFraction
+    }
     val effectiveCollapseFraction by animateFloatAsState(
-        targetValue = if (showSearch || pagerState.currentPage == 4) 1f else scrollCollapseFraction,
+        targetValue = targetCollapseFraction,
         animationSpec = tween(durationMillis = 180),
         label = "collapseFraction"
     )
@@ -307,21 +313,22 @@ fun MainDashboardScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .statusBarsPadding()
                         .height(currentHeaderHeight)
                         .padding(horizontal = 24.dp)
                 ) {
                     Text(
                         text = pageTitle,
                         fontFamily = PowerholdSerifFontFamily,
-                        fontSize = lerp(40f, 24f, effectiveCollapseFraction).sp,
+                        fontSize = lerp(40f, 22f, effectiveCollapseFraction).sp,
                         fontWeight = FontWeight.Normal,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .align(Alignment.TopStart)
-                            .padding(top = lerp(44.dp, 40.dp, effectiveCollapseFraction))
+                            .padding(top = lerp(16.dp, 12.dp, effectiveCollapseFraction))
                     )
 
-                    if (pagerState.currentPage != 4) {
+                    if (pagerState.currentPage != 1 && pagerState.currentPage != 4) {
                         IconButton(
                             onClick = { showThemeDialog = true },
                             modifier = Modifier
@@ -364,6 +371,7 @@ fun MainDashboardScreen(
                             savedUrl = savedWebsiteUrl,
                             selectedAction = selectedAction,
                             contentPadding = tabPadding,
+                            onOpenThemeDialog = { showThemeDialog = true },
                             onSelectWebsite = { viewModel.selectWebsite(it) }
                         )
                         2 -> InstalledAppsTab(
@@ -539,9 +547,9 @@ fun MainDashboardScreen(
                     .padding(bottom = if (isImeVisible) 8.dp else 112.dp),
                 horizontalAlignment = Alignment.End
             ) {
-                // ADB Setup FAB above the search button / search bar
+                // ADB Setup FAB above the search button / search bar (only on Actions page)
                 AnimatedVisibility(
-                    visible = !hasAdbPermission,
+                    visible = !hasAdbPermission && pagerState.currentPage == 0,
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
