@@ -8,6 +8,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -22,6 +23,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,11 +32,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.union
@@ -60,8 +64,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
@@ -109,6 +111,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.powerhold.app.data.ActionType
 import com.powerhold.app.ui.MainViewModel
 import com.powerhold.app.ui.theme.AppIcons
+import com.powerhold.app.ui.theme.PowerholdSerifFontFamily
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -259,7 +262,7 @@ fun MainDashboardScreen(
 
     val scrollCollapseFraction = (-headerOffsetPx / collapseRangePx).coerceIn(0f, 1f)
     val effectiveCollapseFraction by animateFloatAsState(
-        targetValue = if (showSearch) 1f else scrollCollapseFraction,
+        targetValue = if (showSearch || pagerState.currentPage == 4) 1f else scrollCollapseFraction,
         animationSpec = tween(durationMillis = 180),
         label = "collapseFraction"
     )
@@ -309,28 +312,30 @@ fun MainDashboardScreen(
                 ) {
                     Text(
                         text = pageTitle,
-                        fontFamily = FontFamily.Default,
-                        fontSize = lerp(38f, 22f, effectiveCollapseFraction).sp,
-                        fontWeight = FontWeight.Bold,
+                        fontFamily = PowerholdSerifFontFamily,
+                        fontSize = lerp(40f, 24f, effectiveCollapseFraction).sp,
+                        fontWeight = FontWeight.Normal,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .align(Alignment.TopStart)
-                            .padding(top = lerp(44.dp, 42.dp, effectiveCollapseFraction))
+                            .padding(top = lerp(44.dp, 40.dp, effectiveCollapseFraction))
                     )
 
-                    IconButton(
-                        onClick = { showThemeDialog = true },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(bottom = lerp(8.dp, 4.dp, effectiveCollapseFraction))
-                            .size(48.dp)
-                    ) {
-                        Icon(
-                            imageVector = AppIcons.Paintbrush,
-                            contentDescription = "Theme Settings",
-                            tint = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.size(26.dp)
-                        )
+                    if (pagerState.currentPage != 4) {
+                        IconButton(
+                            onClick = { showThemeDialog = true },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(bottom = lerp(8.dp, 2.dp, effectiveCollapseFraction))
+                                .size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = AppIcons.Paintbrush,
+                                contentDescription = "Theme Settings",
+                                tint = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
                     }
                 }
 
@@ -378,7 +383,12 @@ fun MainDashboardScreen(
                             onTestAction = { viewModel.testAction(context, it) }
                         )
                         4 -> AboutTab(
-                            contentPadding = tabPadding
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 8.dp,
+                                bottom = 110.dp
+                            )
                         )
                     }
                 }
@@ -401,47 +411,61 @@ fun MainDashboardScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Button(
                             onClick = { viewModel.testAction(context) },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(14.dp)
                         ) {
-                            Icon(AppIcons.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
+                            Icon(AppIcons.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
                             Text(
                                 text = testButtonLabel,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
 
                         if (!isAssistantSet) {
                             FilledTonalButton(
                                 onClick = onOpenAssistantSettings,
-                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.height(38.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                                shape = RoundedCornerShape(14.dp),
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             ) {
-                                Text("Set as Assistant", fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = "Set as Assistant",
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
                             }
                         }
                     }
 
-                    // Bottom navigation bar: icon-only (no text labels)
-                    NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 0.dp
+                    // Thinner icon-only bottom navigation bar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .height(52.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         val navTabs = listOf(
                             NavTabItem("Actions", AppIcons.Widgets, AppIcons.WidgetsOutlined, 0),
@@ -454,26 +478,51 @@ fun MainDashboardScreen(
                         navTabs.forEach { tab ->
                             val isSelected = pagerState.currentPage == tab.index
                             val iconScale by animateFloatAsState(
-                                targetValue = if (isSelected) 1.15f else 1.0f,
+                                targetValue = if (isSelected) 1.12f else 1.0f,
                                 animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
                                 label = "iconScale"
                             )
+                            val pillWidth by animateDpAsState(
+                                targetValue = if (isSelected) 54.dp else 0.dp,
+                                animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy),
+                                label = "pillWidth"
+                            )
 
-                            NavigationBarItem(
-                                selected = isSelected,
-                                onClick = {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(tab.index)
-                                    }
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = if (isSelected) tab.filledIcon else tab.outlinedIcon,
-                                        contentDescription = tab.label,
-                                        modifier = Modifier.scale(iconScale)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(tab.index)
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (pillWidth > 0.dp) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(pillWidth)
+                                            .height(30.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.secondaryContainer)
                                     )
                                 }
-                            )
+                                Icon(
+                                    imageVector = if (isSelected) tab.filledIcon else tab.outlinedIcon,
+                                    contentDescription = tab.label,
+                                    tint = if (isSelected)
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .scale(iconScale)
+                                )
+                            }
                         }
                     }
                 }
@@ -481,12 +530,13 @@ fun MainDashboardScreen(
 
             // 3. Floating Action Buttons & Morphing Search Bar Layer
             // Only this layer moves with the keyboard (imePadding).
+            val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))
-                    .padding(bottom = if (showSearch) 8.dp else 148.dp),
+                    .padding(bottom = if (isImeVisible) 8.dp else 112.dp),
                 horizontalAlignment = Alignment.End
             ) {
                 // ADB Setup FAB above the search button / search bar
