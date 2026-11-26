@@ -35,7 +35,8 @@ class MainActivity : ComponentActivity() {
 
             PowerholdTheme(
                 darkTheme = isDarkTheme,
-                amoledMode = isAmoledMode
+                amoledMode = isAmoledMode,
+                dynamicColor = true
             ) {
                 MainDashboardScreen(
                     viewModel = viewModel,

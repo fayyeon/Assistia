@@ -11,6 +11,7 @@ data class RemapAction(
     val packageName: String? = null,
     val activityName: String? = null,
     val toggleKey: String? = null,
+    val url: String? = null,
     val requiresAdb: Boolean = false,
     val requiresPermission: String? = null,
     val isNonRootDirect: Boolean = true

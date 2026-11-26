@@ -4,21 +4,24 @@ import android.app.role.RoleManager
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,18 +29,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -85,12 +93,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -98,9 +109,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.powerhold.app.data.ActionType
 import com.powerhold.app.ui.MainViewModel
 import com.powerhold.app.ui.theme.AppIcons
-import com.powerhold.app.ui.theme.PowerholdSerifFontFamily
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -117,6 +126,7 @@ fun MainDashboardScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isAmoledMode by viewModel.isAmoledMode.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
+    val savedWebsiteUrl by viewModel.savedWebsiteUrl.collectAsState()
 
     val quickToggles by viewModel.filteredQuickToggles.collectAsState()
     val apps by viewModel.filteredInstalledApps.collectAsState()
@@ -127,11 +137,9 @@ fun MainDashboardScreen(
 
     var showSearch by remember { mutableStateOf(false) }
     var showAdbDialog by remember { mutableStateOf(false) }
-    var showAboutDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
 
     val isSystemDark = isSystemInDarkTheme()
-    val isDarkActive = themeMode == "DARK" || (themeMode == "SYSTEM" && isSystemDark)
 
     // Track whether Powerhold is already set as default assistant
     var isAssistantSet by remember { mutableStateOf(false) }
@@ -162,27 +170,41 @@ fun MainDashboardScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // Horizontal pager for swiping between tabs (Task 9)
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
+    // 5-page HorizontalPager: 0=Actions, 1=Website, 2=Apps, 3=Activities, 4=About
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 5 })
+
+    val isSearchablePage = pagerState.currentPage in listOf(0, 2, 3)
 
     LaunchedEffect(pagerState.currentPage) {
         viewModel.setSelectedTab(pagerState.currentPage)
-        if (pagerState.currentPage == 1) {
+        if (!isSearchablePage && showSearch) {
+            showSearch = false
+            viewModel.setSearchQuery("")
+            keyboardController?.hide()
+        }
+        if (pagerState.currentPage == 2) {
             viewModel.loadApps(context)
-        } else if (pagerState.currentPage == 2) {
+        } else if (pagerState.currentPage == 3) {
             viewModel.loadActivities(context)
         }
     }
 
-    // Dynamic search placeholder based on current tab (Task 3)
+    val pageTitle = when (pagerState.currentPage) {
+        0 -> "Actions"
+        1 -> "Website"
+        2 -> "Apps"
+        3 -> "Activities"
+        4 -> "About"
+        else -> "Actions"
+    }
+
     val searchPlaceholder = when (pagerState.currentPage) {
         0 -> "Search actions..."
-        1 -> "Search apps..."
-        2 -> "Search activities..."
+        2 -> "Search apps..."
+        3 -> "Search activities..."
         else -> "Search..."
     }
 
-    // Dynamic Test Trigger button text (Task 17)
     val testButtonLabel = remember(selectedAction) {
         when (selectedAction.type) {
             ActionType.OPEN_APP -> "Test Trigger ${selectedAction.title}"
@@ -191,18 +213,20 @@ fun MainDashboardScreen(
                 "Test Trigger $appName Activity"
             }
             ActionType.QUICK_TOGGLE -> "Test Trigger ${selectedAction.title}"
+            ActionType.OPEN_WEBSITE -> "Test Trigger ${selectedAction.title}"
         }
     }
 
-    // Focus & keyboard auto-open on search toggle (Task 4)
+    // Focus & keyboard auto-open on search toggle
     LaunchedEffect(showSearch) {
         if (showSearch) {
             focusRequester.requestFocus()
             keyboardController?.show()
+        } else {
+            keyboardController?.hide()
         }
     }
 
-    // Handle back button to close search mode smoothly
     BackHandler(enabled = showSearch) {
         showSearch = false
         viewModel.setSearchQuery("")
@@ -210,10 +234,6 @@ fun MainDashboardScreen(
 
     if (showAdbDialog) {
         AdbHelperDialog(onDismiss = { showAdbDialog = false })
-    }
-
-    if (showAboutDialog) {
-        AboutAppDialog(onDismiss = { showAboutDialog = false })
     }
 
     if (showThemeDialog) {
@@ -227,145 +247,144 @@ fun MainDashboardScreen(
         )
     }
 
-    // Samsung One UI upper 50% screen viewing area dimensions
+    // Samsung One UI collapsing header dimensions
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
-    val maxHeaderHeight = (screenHeight * 0.48f).coerceAtLeast(320.dp)
-    val maxHeaderHeightPx = with(LocalDensity.current) { maxHeaderHeight.toPx() }
+    val expandedHeaderHeight = (screenHeight * 0.44f).coerceAtLeast(280.dp)
+    val collapsedHeaderHeight = 92.dp
+    val collapseRangePx = with(LocalDensity.current) {
+        (expandedHeaderHeight - collapsedHeaderHeight).toPx().coerceAtLeast(1f)
+    }
     var headerOffsetPx by remember { mutableFloatStateOf(0f) }
 
-    val nestedScrollConnection = remember(maxHeaderHeightPx) {
+    val scrollCollapseFraction = (-headerOffsetPx / collapseRangePx).coerceIn(0f, 1f)
+    val effectiveCollapseFraction by animateFloatAsState(
+        targetValue = if (showSearch) 1f else scrollCollapseFraction,
+        animationSpec = tween(durationMillis = 180),
+        label = "collapseFraction"
+    )
+    val currentHeaderHeight = lerp(expandedHeaderHeight, collapsedHeaderHeight, effectiveCollapseFraction)
+
+    val nestedScrollConnection = remember(collapseRangePx) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 val delta = available.y
-                // When scrolling DOWN (finger drags up, delta < 0), collapse the upper 50% header
-                if (delta < 0 && headerOffsetPx > -maxHeaderHeightPx) {
+                if (delta < 0 && headerOffsetPx > -collapseRangePx) {
                     val prev = headerOffsetPx
-                    headerOffsetPx = (headerOffsetPx + delta).coerceIn(-maxHeaderHeightPx, 0f)
-                    val consumed = headerOffsetPx - prev
-                    return Offset(0f, consumed)
+                    headerOffsetPx = (headerOffsetPx + delta).coerceIn(-collapseRangePx, 0f)
+                    return Offset(0f, headerOffsetPx - prev)
                 }
                 return Offset.Zero
             }
 
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                 val delta = available.y
-                // When scrolling UP (finger drags down, delta > 0) and content reached top, expand header
                 if (delta > 0 && headerOffsetPx < 0f) {
                     val prev = headerOffsetPx
-                    headerOffsetPx = (headerOffsetPx + delta).coerceIn(-maxHeaderHeightPx, 0f)
-                    val consumed = headerOffsetPx - prev
-                    return Offset(0f, consumed)
+                    headerOffsetPx = (headerOffsetPx + delta).coerceIn(-collapseRangePx, 0f)
+                    return Offset(0f, headerOffsetPx - prev)
                 }
                 return Offset.Zero
             }
         }
     }
 
-    // Root Surface guarantees solid, correct theme background across light, dark, and AMOLED modes
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection)
-        ) {
-            // 1. Content: HorizontalPager with content placed below the 50% line when at top
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) { page ->
-                val tabPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = if (showSearch) 12.dp else (maxHeaderHeight + 8.dp),
-                    bottom = 142.dp
-                )
-                when (page) {
-                    0 -> QuickTogglesTab(
-                        toggles = quickToggles,
-                        selectedAction = selectedAction,
-                        hasAdbPermission = hasAdbPermission,
-                        contentPadding = tabPadding,
-                        onSelectAction = { viewModel.selectAction(it) },
-                        onTestAction = { viewModel.testAction(context, it) }
-                    )
-                    1 -> InstalledAppsTab(
-                        apps = apps,
-                        isLoading = isLoadingApps,
-                        selectedAction = selectedAction,
-                        contentPadding = tabPadding,
-                        onSelectAction = { viewModel.selectAction(it) },
-                        onTestAction = { viewModel.testAction(context, it) }
-                    )
-                    2 -> AppActivitiesTab(
-                        activities = activities,
-                        isLoading = isLoadingActivities,
-                        selectedAction = selectedAction,
-                        contentPadding = tabPadding,
-                        onSelectAction = { viewModel.selectAction(it) },
-                        onTestAction = { viewModel.testAction(context, it) }
-                    )
-                }
-            }
-
-            // 2. Samsung One UI 50% Upper Viewing Area:
-            // "Powerhold" title at top-left corner (large 42sp serif font),
-            // spacious viewing area, and theme paintbrush button at bottom-right of this upper area.
-            // Smoothly collapses on scroll down; completely hidden when search is active.
-            if (!showSearch) {
-                Column(
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 1. Main Column: Collapsing Samsung One UI Header + HorizontalPager
+            // Because both are in a Column, the lists move up together with the collapsing upper area!
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection)
+            ) {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(maxHeaderHeight)
-                        .offset { IntOffset(0, headerOffsetPx.roundToInt()) }
+                        .height(currentHeaderHeight)
                         .padding(horizontal = 24.dp)
                 ) {
-                    // "Powerhold" title in serif font at top-left corner (large 42sp, clicking opens About dialog)
                     Text(
-                        text = "Powerhold",
-                        fontFamily = PowerholdSerifFontFamily,
-                        fontSize = 42.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = if (isDarkActive) Color.White else Color.Black,
+                        text = pageTitle,
+                        fontFamily = FontFamily.Default,
+                        fontSize = lerp(38f, 22f, effectiveCollapseFraction).sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier
-                            .padding(top = 40.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) {
-                                showAboutDialog = true
-                            }
+                            .align(Alignment.TopStart)
+                            .padding(top = lerp(44.dp, 42.dp, effectiveCollapseFraction))
                     )
 
-                    // Spacious upper 50% area
-                    Spacer(Modifier.weight(1f))
-
-                    // Theme button located on the bottom-right of the upper 50% area (just above content)
-                    Row(
+                    IconButton(
+                        onClick = { showThemeDialog = true },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp),
-                        horizontalArrangement = Arrangement.End
+                            .align(Alignment.BottomEnd)
+                            .padding(bottom = lerp(8.dp, 4.dp, effectiveCollapseFraction))
+                            .size(48.dp)
                     ) {
-                        IconButton(
-                            onClick = { showThemeDialog = true },
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(
-                                imageVector = AppIcons.Paintbrush,
-                                contentDescription = "Theme Settings",
-                                tint = if (isDarkActive) Color.White else Color.Black,
-                                modifier = Modifier.size(26.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = AppIcons.Paintbrush,
+                            contentDescription = "Theme Settings",
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+                }
+
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) { page ->
+                    val tabPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        bottom = 160.dp
+                    )
+                    when (page) {
+                        0 -> QuickTogglesTab(
+                            toggles = quickToggles,
+                            selectedAction = selectedAction,
+                            hasAdbPermission = hasAdbPermission,
+                            contentPadding = tabPadding,
+                            onSelectAction = { viewModel.selectAction(it) },
+                            onTestAction = { viewModel.testAction(context, it) }
+                        )
+                        1 -> WebsiteTab(
+                            savedUrl = savedWebsiteUrl,
+                            selectedAction = selectedAction,
+                            contentPadding = tabPadding,
+                            onSelectWebsite = { viewModel.selectWebsite(it) }
+                        )
+                        2 -> InstalledAppsTab(
+                            apps = apps,
+                            isLoading = isLoadingApps,
+                            selectedAction = selectedAction,
+                            contentPadding = tabPadding,
+                            onSelectAction = { viewModel.selectAction(it) },
+                            onTestAction = { viewModel.testAction(context, it) }
+                        )
+                        3 -> AppActivitiesTab(
+                            activities = activities,
+                            isLoading = isLoadingActivities,
+                            selectedAction = selectedAction,
+                            contentPadding = tabPadding,
+                            onSelectAction = { viewModel.selectAction(it) },
+                            onTestAction = { viewModel.testAction(context, it) }
+                        )
+                        4 -> AboutTab(
+                            contentPadding = tabPadding
+                        )
                     }
                 }
             }
 
-            // 3. Docked Bottom Bar: Dynamic Test Trigger button + NavigationBar
+            // 2. Docked Bottom Bar: FIXED at bottom (no imePadding, covered by keyboard when active)
             Surface(
                 color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 3.dp,
@@ -379,7 +398,6 @@ fun MainDashboardScreen(
                         thickness = 1.dp
                     )
 
-                    // Test Trigger button bar (Task 17)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -420,15 +438,17 @@ fun MainDashboardScreen(
                         }
                     }
 
-                    // Bottom navigation bar with animated outline -> filled icons & expanding pills (Tasks 2, 8, Pic 3)
+                    // Bottom navigation bar: icon-only (no text labels)
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.surface,
                         tonalElevation = 0.dp
                     ) {
                         val navTabs = listOf(
                             NavTabItem("Actions", AppIcons.Widgets, AppIcons.WidgetsOutlined, 0),
-                            NavTabItem("Apps", AppIcons.Apps, AppIcons.AppsOutlined, 1),
-                            NavTabItem("Activities", AppIcons.Code, AppIcons.CodeOutlined, 2)
+                            NavTabItem("Website", AppIcons.Language, AppIcons.LanguageOutlined, 1),
+                            NavTabItem("Apps", AppIcons.Apps, AppIcons.AppsOutlined, 2),
+                            NavTabItem("Activities", AppIcons.Code, AppIcons.CodeOutlined, 3),
+                            NavTabItem("About", AppIcons.Info, AppIcons.InfoOutlined, 4)
                         )
 
                         navTabs.forEach { tab ->
@@ -452,12 +472,6 @@ fun MainDashboardScreen(
                                         contentDescription = tab.label,
                                         modifier = Modifier.scale(iconScale)
                                     )
-                                },
-                                label = {
-                                    Text(
-                                        text = tab.label,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
                                 }
                             )
                         }
@@ -465,99 +479,118 @@ fun MainDashboardScreen(
                 }
             }
 
-            // 4. Floating Action Buttons & Search Bar Layer
-            // Automatically moves with user's keyboard height (imePadding).
-            // When search is active, the search bar appears above the keyboard,
-            // and the Search/X button + ADB button float directly above the search bar.
+            // 3. Floating Action Buttons & Morphing Search Bar Layer
+            // Only this layer moves with the keyboard (imePadding).
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .fillMaxWidth()
-                    .imePadding()
-                    .padding(bottom = if (showSearch) 8.dp else 142.dp),
+                    .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))
+                    .padding(bottom = if (showSearch) 8.dp else 148.dp),
                 horizontalAlignment = Alignment.End
             ) {
-                // Floating Action Buttons (ADB setup & Search / Close)
-                Column(
-                    modifier = Modifier.padding(end = 16.dp, bottom = if (showSearch) 8.dp else 0.dp),
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                // ADB Setup FAB above the search button / search bar
+                AnimatedVisibility(
+                    visible = !hasAdbPermission,
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
-                    // Secondary ADB Setup FAB directly above Search FAB, hidden once permission granted
-                    AnimatedVisibility(
-                        visible = !hasAdbPermission,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        FloatingActionButton(
-                            onClick = { showAdbDialog = true },
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(
-                                imageVector = AppIcons.Terminal,
-                                contentDescription = "ADB Setup",
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                    }
-
-                    // Search Floating Action Button (switches to Close 'X' when search is open)
                     FloatingActionButton(
-                        onClick = {
-                            showSearch = !showSearch
-                            if (!showSearch) viewModel.setSearchQuery("")
-                        },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        shape = RoundedCornerShape(16.dp)
+                        onClick = { showAdbDialog = true },
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .padding(end = 16.dp, bottom = 10.dp)
+                            .size(48.dp)
                     ) {
                         Icon(
-                            imageVector = if (showSearch) Icons.Default.Close else Icons.Default.Search,
-                            contentDescription = if (showSearch) "Close search" else "Search"
+                            imageVector = AppIcons.Terminal,
+                            contentDescription = "ADB Setup",
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }
 
-                // Search Bar (slides in right above keyboard/bottom, with autofocus)
-                AnimatedVisibility(
-                    visible = showSearch,
-                    enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        tonalElevation = 6.dp,
-                        shadowElevation = 8.dp,
-                        color = MaterialTheme.colorScheme.surface
-                    ) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text(searchPlaceholder) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Clear")
-                                    }
+                // Morphing Search FAB <-> Search Bar
+                if (isSearchablePage || showSearch) {
+                    AnimatedContent(
+                        targetState = showSearch,
+                        transitionSpec = {
+                            (fadeIn(tween(200)) + expandHorizontally(
+                                expandFrom = Alignment.End,
+                                animationSpec = tween(250)
+                            )) togetherWith (fadeOut(tween(150)) + shrinkHorizontally(
+                                shrinkTowards = Alignment.End,
+                                animationSpec = tween(200)
+                            )) using SizeTransform(clip = false)
+                        },
+                        contentAlignment = Alignment.CenterEnd,
+                        label = "searchMorph"
+                    ) { isSearching ->
+                        if (isSearching) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                shape = RoundedCornerShape(20.dp),
+                                tonalElevation = 6.dp,
+                                shadowElevation = 8.dp,
+                                color = MaterialTheme.colorScheme.surface
+                            ) {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = { viewModel.setSearchQuery(it) },
+                                    placeholder = { Text(searchPlaceholder) },
+                                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                                    trailingIcon = {
+                                        IconButton(
+                                            onClick = {
+                                                if (searchQuery.isNotEmpty()) {
+                                                    viewModel.setSearchQuery("")
+                                                } else {
+                                                    showSearch = false
+                                                }
+                                            }
+                                        ) {
+                                            Icon(Icons.Default.Close, contentDescription = "Close search")
+                                        }
+                                    },
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                    keyboardActions = KeyboardActions(
+                                        onSearch = { keyboardController?.hide() }
+                                    ),
+                                    shape = RoundedCornerShape(20.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequester),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                                    )
+                                )
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(end = 16.dp),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                FloatingActionButton(
+                                    onClick = { showSearch = true },
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = "Search"
+                                    )
                                 }
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequester),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-                            )
-                        )
+                            }
+                        }
                     }
                 }
             }
@@ -572,15 +605,6 @@ private data class NavTabItem(
     val index: Int
 )
 
-/**
- * Visual Theme Selection Dialog designed to match Concept Pic 2:
- * - Top-right "X" close button
- * - Horizontal layout with 3 visual options:
- *   1. Device Theme (B/W split circle + RadioButton + "Device Theme")
- *   2. Light (White circle + RadioButton + "Light")
- *   3. Dark (Grey/black circle as specified + RadioButton + "Dark")
- * - Centered "Pure Black" checkbox at bottom (pure white text in dark mode, pure black in light mode)
- */
 @Composable
 private fun ThemeChooserDialog(
     currentTheme: String,
@@ -612,7 +636,6 @@ private fun ThemeChooserDialog(
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top-right close "X" button (Pic 2)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -631,13 +654,11 @@ private fun ThemeChooserDialog(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Three horizontal theme options (Pic 2)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Option 1: Device Theme (B/W split circle)
                     ThemeOptionItem(
                         title = "Device\nTheme",
                         isSelected = currentTheme == "SYSTEM",
@@ -651,14 +672,12 @@ private fun ThemeChooserDialog(
                                 .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), CircleShape)
                         ) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
-                                // Left half: Light
                                 drawArc(
                                     color = Color.White,
                                     startAngle = 90f,
                                     sweepAngle = 180f,
                                     useCenter = true
                                 )
-                                // Right half: Dark
                                 drawArc(
                                     color = Color(0xFF262626),
                                     startAngle = 270f,
@@ -669,7 +688,6 @@ private fun ThemeChooserDialog(
                         }
                     }
 
-                    // Option 2: Light (Solid white circle)
                     ThemeOptionItem(
                         title = "Light\n",
                         isSelected = currentTheme == "LIGHT",
@@ -685,7 +703,6 @@ private fun ThemeChooserDialog(
                         )
                     }
 
-                    // Option 3: Dark (Grey if set to pure black, black if not set to pure black, Pic 2)
                     ThemeOptionItem(
                         title = "Dark\n",
                         isSelected = currentTheme == "DARK",
@@ -705,8 +722,6 @@ private fun ThemeChooserDialog(
 
                 Spacer(Modifier.height(28.dp))
 
-                // Pure Black Checkbox (Pic 2)
-                // Text is purely white on dark mode and purely black on light mode
                 val isCheckboxEnabled = isDarkActive
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

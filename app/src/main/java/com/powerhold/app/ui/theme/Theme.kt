@@ -57,7 +57,7 @@ private val LightColorScheme = lightColorScheme(
 fun PowerholdTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     amoledMode: Boolean = false,
-    dynamicColor: Boolean = false,
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val baseColorScheme = when {

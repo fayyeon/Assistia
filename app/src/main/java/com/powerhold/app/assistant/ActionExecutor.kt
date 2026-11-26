@@ -65,6 +65,33 @@ object ActionExecutor {
             ActionType.QUICK_TOGGLE -> {
                 executeQuickToggle(context, action, prefs)
             }
+            ActionType.OPEN_WEBSITE -> {
+                openWebsite(context, action.url ?: action.subtitle)
+            }
+        }
+    }
+
+    private fun openWebsite(context: Context, rawUrl: String) {
+        val trimmed = rawUrl.trim()
+        if (trimmed.isBlank()) {
+            showToast(context, "No website URL configured")
+            return
+        }
+        val normalized = if (trimmed.startsWith("http://", ignoreCase = true) ||
+            trimmed.startsWith("https://", ignoreCase = true)
+        ) {
+            trimmed
+        } else {
+            "https://$trimmed"
+        }
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(normalized)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            showToast(context, "Opening $normalized")
+        } catch (e: Exception) {
+            showToast(context, "Unable to open website: ${e.localizedMessage}")
         }
     }
 

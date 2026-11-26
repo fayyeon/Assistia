@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.powerhold.app.PowerholdApplication
 import com.powerhold.app.assistant.ActionExecutor
+import com.powerhold.app.data.ActionType
 import com.powerhold.app.data.AppListRepository
 import com.powerhold.app.data.PreferencesManager
 import com.powerhold.app.data.QuickToggleRepository
@@ -28,6 +29,9 @@ class MainViewModel : ViewModel() {
 
     val themeMode: StateFlow<String> = prefsManager.themeModeFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "SYSTEM")
+
+    val savedWebsiteUrl: StateFlow<String> = prefsManager.savedWebsiteUrlFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab
@@ -97,6 +101,35 @@ class MainViewModel : ViewModel() {
     fun selectAction(action: RemapAction) {
         viewModelScope.launch {
             prefsManager.setSelectedAction(action)
+        }
+    }
+
+    fun selectWebsite(rawUrl: String) {
+        val trimmed = rawUrl.trim()
+        if (trimmed.isBlank()) return
+        val normalized = if (trimmed.startsWith("http://", ignoreCase = true) ||
+            trimmed.startsWith("https://", ignoreCase = true)
+        ) {
+            trimmed
+        } else {
+            "https://$trimmed"
+        }
+        val hostLabel = try {
+            android.net.Uri.parse(normalized).host?.removePrefix("www.")?.ifBlank { normalized } ?: normalized
+        } catch (_: Exception) {
+            normalized
+        }
+        val websiteAction = RemapAction(
+            id = "open_website",
+            type = ActionType.OPEN_WEBSITE,
+            title = hostLabel,
+            subtitle = normalized,
+            url = normalized,
+            isNonRootDirect = true
+        )
+        viewModelScope.launch {
+            prefsManager.setSavedWebsiteUrl(normalized)
+            prefsManager.setSelectedAction(websiteAction)
         }
     }
 

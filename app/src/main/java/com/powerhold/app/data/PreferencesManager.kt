@@ -23,6 +23,8 @@ class PreferencesManager(private val context: Context) {
         val PACKAGE_NAME = stringPreferencesKey("package_name")
         val ACTIVITY_NAME = stringPreferencesKey("activity_name")
         val TOGGLE_KEY = stringPreferencesKey("toggle_key")
+        val ACTION_URL = stringPreferencesKey("action_url")
+        val SAVED_WEBSITE_URL = stringPreferencesKey("saved_website_url")
         val REQUIRES_ADB = booleanPreferencesKey("requires_adb")
         val REQUIRES_PERMISSION = stringPreferencesKey("requires_permission")
         val IS_NON_ROOT_DIRECT = booleanPreferencesKey("is_non_root_direct")
@@ -48,6 +50,7 @@ class PreferencesManager(private val context: Context) {
             packageName = prefs[Keys.PACKAGE_NAME],
             activityName = prefs[Keys.ACTIVITY_NAME],
             toggleKey = prefs[Keys.TOGGLE_KEY] ?: RemapAction.DEFAULT.toggleKey,
+            url = prefs[Keys.ACTION_URL],
             requiresAdb = prefs[Keys.REQUIRES_ADB] ?: false,
             requiresPermission = prefs[Keys.REQUIRES_PERMISSION],
             isNonRootDirect = prefs[Keys.IS_NON_ROOT_DIRECT] ?: true
@@ -67,6 +70,7 @@ class PreferencesManager(private val context: Context) {
             action.packageName?.let { prefs[Keys.PACKAGE_NAME] = it } ?: prefs.remove(Keys.PACKAGE_NAME)
             action.activityName?.let { prefs[Keys.ACTIVITY_NAME] = it } ?: prefs.remove(Keys.ACTIVITY_NAME)
             action.toggleKey?.let { prefs[Keys.TOGGLE_KEY] = it } ?: prefs.remove(Keys.TOGGLE_KEY)
+            action.url?.let { prefs[Keys.ACTION_URL] = it } ?: prefs.remove(Keys.ACTION_URL)
             prefs[Keys.REQUIRES_ADB] = action.requiresAdb
             action.requiresPermission?.let { prefs[Keys.REQUIRES_PERMISSION] = it } ?: prefs.remove(Keys.REQUIRES_PERMISSION)
             prefs[Keys.IS_NON_ROOT_DIRECT] = action.isNonRootDirect
@@ -100,6 +104,16 @@ class PreferencesManager(private val context: Context) {
     suspend fun setThemeMode(mode: String) {
         context.dataStore.edit { prefs ->
             prefs[Keys.THEME_MODE] = mode
+        }
+    }
+
+    val savedWebsiteUrlFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.SAVED_WEBSITE_URL] ?: ""
+    }
+
+    suspend fun setSavedWebsiteUrl(url: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.SAVED_WEBSITE_URL] = url
         }
     }
 }
