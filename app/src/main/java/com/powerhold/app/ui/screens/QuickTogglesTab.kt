@@ -1,5 +1,6 @@
 package com.powerhold.app.ui.screens
 
+import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,9 +15,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -34,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -63,23 +67,45 @@ fun QuickTogglesTab(
         return
     }
 
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 220.dp),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        gridItems(toggles, key = { it.id }) { action ->
-            val isSelected = action.id == selectedAction.id
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-            QuickToggleItemCard(
-                action = action,
-                isSelected = isSelected,
-                hasAdbPermission = hasAdbPermission,
-                onClick = { onSelectAction(action) },
-                onTest = { onTestAction(action) }
-            )
+    if (isLandscape) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 220.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            gridItems(toggles, key = { it.id }) { action ->
+                val isSelected = action.id == selectedAction.id
+
+                QuickToggleItemCard(
+                    action = action,
+                    isSelected = isSelected,
+                    hasAdbPermission = hasAdbPermission,
+                    onClick = { onSelectAction(action) },
+                    onTest = { onTestAction(action) }
+                )
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(toggles, key = { it.id }) { action ->
+                val isSelected = action.id == selectedAction.id
+
+                QuickToggleItemCard(
+                    action = action,
+                    isSelected = isSelected,
+                    hasAdbPermission = hasAdbPermission,
+                    onClick = { onSelectAction(action) },
+                    onTest = { onTestAction(action) }
+                )
+            }
         }
     }
 }
