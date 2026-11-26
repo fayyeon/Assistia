@@ -1,6 +1,8 @@
+<div align="center">
 # Powerhold
 
 Simple assistant shortcut remapper for Android. Replace the Google Assistant / Gemini shortcut on your phone with a shortcut to another functionality. No root required.
+</div>
 
 ---
 
