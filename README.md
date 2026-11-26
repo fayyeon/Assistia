@@ -7,6 +7,7 @@ Simple assistant shortcut remapper for Android. Replace the Google Assistant / G
 ## Remap Functionalities
 
 - 🔧 Quick Panel Toggles & System Actions
+- 🌐 Websites
 - 📱 Installed Applications
 - 🏃🏻 App Activities
 
