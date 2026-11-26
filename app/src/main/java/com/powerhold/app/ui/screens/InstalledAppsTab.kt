@@ -1,7 +1,7 @@
 package com.powerhold.app.ui.screens
 
 import android.content.Context
-import android.graphics.drawable.Drawable
+import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -87,21 +91,45 @@ fun InstalledAppsTab(
         return
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        items(apps, key = { it.id }) { action ->
-            val isSelected = action.id == selectedAction.id
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-            AppItemCard(
-                context = context,
-                action = action,
-                isSelected = isSelected,
-                onClick = { onSelectAction(action) },
-                onTest = { onTestAction(action) }
-            )
+    if (isLandscape) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            gridItems(apps, key = { it.id }) { action ->
+                val isSelected = action.id == selectedAction.id
+
+                AppItemCard(
+                    context = context,
+                    action = action,
+                    isSelected = isSelected,
+                    onClick = { onSelectAction(action) },
+                    onTest = { onTestAction(action) }
+                )
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(apps, key = { it.id }) { action ->
+                val isSelected = action.id == selectedAction.id
+
+                AppItemCard(
+                    context = context,
+                    action = action,
+                    isSelected = isSelected,
+                    onClick = { onSelectAction(action) },
+                    onTest = { onTestAction(action) }
+                )
+            }
         }
     }
 }

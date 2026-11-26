@@ -1,6 +1,7 @@
 package com.powerhold.app.ui.screens
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +42,7 @@ fun AboutTab() {
         "1.0.0"
     }
 
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val circleColor = if (isDark) Color(0xFFD4D4D4) else Color(0xFF3B3B3B)
     val iconColor = if (isDark) Color(0xFF171717) else Color(0xFFFFFFFF)
@@ -48,7 +51,11 @@ fun AboutTab() {
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .padding(start = 16.dp, end = 16.dp, bottom = 104.dp),
+            .padding(
+                start = 16.dp,
+                end = 16.dp,
+                bottom = if (isLandscape) 16.dp else 104.dp
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -58,24 +65,24 @@ fun AboutTab() {
             Surface(
                 shape = CircleShape,
                 color = circleColor,
-                modifier = Modifier.size(92.dp)
+                modifier = Modifier.size(if (isLandscape) 72.dp else 92.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = AppIcons.Power,
                         contentDescription = "Powerhold Logo",
                         tint = iconColor,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(if (isLandscape) 38.dp else 48.dp)
                     )
                 }
             }
 
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(if (isLandscape) 12.dp else 18.dp))
 
             Text(
                 text = "Powerhold",
                 fontFamily = FontFamily.Default,
-                fontSize = 26.sp,
+                fontSize = if (isLandscape) 22.sp else 26.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -88,7 +95,7 @@ fun AboutTab() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(if (isLandscape) 16.dp else 28.dp))
 
             OutlinedButton(
                 onClick = {

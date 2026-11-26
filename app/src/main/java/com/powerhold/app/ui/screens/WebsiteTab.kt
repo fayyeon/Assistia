@@ -1,9 +1,9 @@
 package com.powerhold.app.ui.screens
 
+import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -38,8 +40,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
@@ -54,11 +56,12 @@ import com.powerhold.app.ui.theme.AppIcons
 fun WebsiteTab(
     savedUrl: String,
     selectedAction: RemapAction,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     onOpenThemeDialog: () -> Unit,
     onSelectWebsite: (String) -> Unit
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     var urlInput by remember { mutableStateOf(savedUrl) }
 
     LaunchedEffect(savedUrl) {
@@ -68,16 +71,26 @@ fun WebsiteTab(
     }
 
     val isWebsiteSelected = selectedAction.type == ActionType.OPEN_WEBSITE
+    val isAlreadySelected = isWebsiteSelected && selectedAction.url == normalizeDisplayUrl(urlInput)
     val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+
+    val bottomPadding = when {
+        isImeVisible -> 8.dp
+        isLandscape -> 80.dp // Leaves room for floating Test Trigger button below in landscape
+        else -> 112.dp
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .then(
+                if (isLandscape) Modifier.verticalScroll(rememberScrollState()) else Modifier
+            )
             .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))
             .padding(
                 start = 16.dp,
                 end = 16.dp,
-                bottom = if (isImeVisible) 8.dp else 112.dp
+                bottom = bottomPadding
             ),
         verticalArrangement = Arrangement.Bottom
     ) {
@@ -90,13 +103,13 @@ fun WebsiteTab(
         ) {
             IconButton(
                 onClick = onOpenThemeDialog,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(44.dp)
             ) {
                 Icon(
                     imageVector = AppIcons.Paintbrush,
                     contentDescription = "Theme Settings",
                     tint = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -117,8 +130,8 @@ fun WebsiteTab(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .padding(if (isLandscape) 14.dp else 18.dp),
+                verticalArrangement = Arrangement.spacedBy(if (isLandscape) 10.dp else 14.dp)
             ) {
                 OutlinedTextField(
                     value = urlInput,
@@ -132,7 +145,7 @@ fun WebsiteTab(
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            if (urlInput.isNotBlank()) {
+                            if (urlInput.isNotBlank() && !isAlreadySelected) {
                                 onSelectWebsite(urlInput)
                                 keyboardController?.hide()
                             }
@@ -157,12 +170,20 @@ fun WebsiteTab(
                         onSelectWebsite(urlInput)
                         keyboardController?.hide()
                     },
-                    enabled = urlInput.isNotBlank(),
+                    enabled = urlInput.isNotBlank() && !isAlreadySelected,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContainerColor = if (isAlreadySelected)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.65f)
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                        disabledContentColor = if (isAlreadySelected)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     )
                 ) {
                     Icon(
@@ -172,7 +193,7 @@ fun WebsiteTab(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = if (isWebsiteSelected && selectedAction.url == normalizeDisplayUrl(urlInput))
+                        text = if (isAlreadySelected)
                             "Selected as Trigger Action"
                         else
                             "Set as Trigger Action",
