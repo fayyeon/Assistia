@@ -4,10 +4,17 @@ Simple assistant shortcut remapper for Android. Replace the Google Assistant / G
 
 ---
 
+## Key Features
+- 🍥 Modern Material 3 Expressive design
+- 🫴 Easy to use UI with one-hand reachability principles
+- 🖼️ Optimized on Landscape Mode
+
+---
+
 ## Remap Functionalities
 
 - 🔧 Quick Panel Toggles & System Actions
-- 🌐 Websites
+- 🌐 Websites Directly Opened on Your Default Browser
 - 📱 Installed Applications
 - 🏃🏻 App Activities
 
@@ -24,6 +31,8 @@ Powerhold handles this gracefully:
 ```bash
 adb shell pm grant com.powerhold android.permission.WRITE_SECURE_SETTINGS
 ```
+
+Use ADB tools on your PC or you can use Shizuku + Canta on Android.
 
 ---
 
