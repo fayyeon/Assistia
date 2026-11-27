@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-    namespace = "com.powerhold.app"
+    namespace = "com.fayyeon.assistia"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.powerhold"
-        minSdk = 26
+        applicationId = "com.fayyeon.assistia"
+        minSdk = 23
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"

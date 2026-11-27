@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Powerhold"
+rootProject.name = "Assistia"
 include(":app")

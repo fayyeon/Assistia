@@ -1,6 +1,6 @@
 <div align="center">
   
-# **Powerhold**
+# **Assistia**
 
 Simple assistant shortcut remapper for Android. Replace the Google Assistant / Gemini shortcut on your phone with a shortcut to another functionality. No root required.
 </div>
@@ -27,12 +27,12 @@ Simple assistant shortcut remapper for Android. Replace the Google Assistant / G
 
 Certain privileged toggles (Airplane Mode, Battery Saver, GPS Location, NFC, Extra Dim, Night Light, etc.) are restricted by Android from being toggled silently in the background by 3rd-party apps.
 
-Powerhold handles this gracefully:
+Assistia handles this gracefully:
 - **Without ADB**: Remapper displays the native floating panel or settings panel (e.g. `Settings.Panel.ACTION_INTERNET_CONNECTIVITY`), allowing a 1-tap flip without.
 - **With ADB (Optional)**: If you run this single command once from a PC or on-device wireless debugging tool (such as Shizuku), Remapper gains permission to toggle them silently in the background:
 
 ```bash
-adb shell pm grant com.powerhold android.permission.WRITE_SECURE_SETTINGS
+adb shell pm grant com.fayyeon.assistia android.permission.WRITE_SECURE_SETTINGS
 ```
 
 Use ADB tools on your PC or you can use Shizuku + Canta on Android.
