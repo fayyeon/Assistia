@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.powerhold.app.data.RemapAction
 import com.powerhold.app.ui.theme.AppIcons
 
@@ -100,7 +101,9 @@ fun QuickTogglesTab(
                     action = action,
                     isSelected = isSelected,
                     hasAdbPermission = hasAdbPermission,
+                    isLandscape = true,
                     onClick = { onSelectAction(action) },
+                    onMoreInfoAdb = onMoreInfoAdb,
                     onTest = { onTestAction(action) }
                 )
             }
@@ -126,7 +129,9 @@ fun QuickTogglesTab(
                     action = action,
                     isSelected = isSelected,
                     hasAdbPermission = hasAdbPermission,
+                    isLandscape = false,
                     onClick = { onSelectAction(action) },
+                    onMoreInfoAdb = onMoreInfoAdb,
                     onTest = { onTestAction(action) }
                 )
             }
@@ -202,7 +207,9 @@ fun QuickToggleItemCard(
     action: RemapAction,
     isSelected: Boolean,
     hasAdbPermission: Boolean = false,
+    isLandscape: Boolean = false,
     onClick: () -> Unit,
+    onMoreInfoAdb: () -> Unit = {},
     onTest: () -> Unit
 ) {
     val icon = getToggleIcon(action.toggleKey)
@@ -223,8 +230,11 @@ fun QuickToggleItemCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (isLandscape) Modifier.height(74.dp) else Modifier)
             .clip(RoundedCornerShape(20.dp))
-            .clickable(enabled = !isDisabled, onClick = onClick),
+            .clickable {
+                if (isDisabled) onMoreInfoAdb() else onClick()
+            },
         colors = CardDefaults.cardColors(containerColor = containerColor),
         shape = RoundedCornerShape(20.dp),
         border = when {
@@ -235,8 +245,8 @@ fun QuickToggleItemCard(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
+                .fillMaxSize()
+                .padding(horizontal = 14.dp, vertical = if (isLandscape) 10.dp else 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
@@ -270,9 +280,10 @@ fun QuickToggleItemCard(
                 Text(
                     text = action.title,
                     style = MaterialTheme.typography.titleMedium,
+                    lineHeight = 18.sp,
                     fontWeight = if (isSelected && !isDisabled) FontWeight.Bold else FontWeight.SemiBold,
                     color = titleColor,
-                    maxLines = 1,
+                    maxLines = if (isLandscape) 2 else 1,
                     overflow = TextOverflow.Ellipsis
                 )
 

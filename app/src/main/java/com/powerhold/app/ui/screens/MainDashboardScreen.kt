@@ -1,5 +1,6 @@
 package com.powerhold.app.ui.screens
 
+import android.app.Activity
 import android.app.role.RoleManager
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -61,6 +62,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -69,6 +73,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
@@ -113,6 +118,7 @@ import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -151,6 +157,7 @@ fun MainDashboardScreen(
     var showThemeDialog by remember { mutableStateOf(false) }
     var isAdbBannerDismissed by rememberSaveable { mutableStateOf(false) }
     var hasAutoPromptedAssistant by rememberSaveable { mutableStateOf(false) }
+    var showAssistantRequiredDialog by remember { mutableStateOf(false) }
 
     val isSystemDark = isSystemInDarkTheme()
     val configuration = LocalConfiguration.current
@@ -183,7 +190,10 @@ fun MainDashboardScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) checkPermissions()
+            if (event == Lifecycle.Event.ON_RESUME) {
+                checkPermissions()
+                showAssistantRequiredDialog = hasAutoPromptedAssistant && !isAssistantSet
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -239,6 +249,53 @@ fun MainDashboardScreen(
 
     if (showAdbDialog) {
         AdbHelperDialog(onDismiss = { showAdbDialog = false })
+    }
+
+    if (showAssistantRequiredDialog) {
+        AlertDialog(
+            onDismissRequest = {},
+            properties = DialogProperties(
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false
+            ),
+            icon = {
+                Icon(
+                    imageVector = AppIcons.Power,
+                    contentDescription = "Default Assistant",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            title = {
+                Text(
+                    text = "Default Assistant Required",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "This app needs to be set as default assistant to work properly.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { (context as? Activity)?.finishAffinity() },
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+                ) {
+                    Text("Exit")
+                }
+            },
+            confirmButton = {
+                Button(onClick = onOpenAssistantSettings) {
+                    Text("Set as Default Assistant")
+                }
+            }
+        )
     }
 
     if (showThemeDialog) {

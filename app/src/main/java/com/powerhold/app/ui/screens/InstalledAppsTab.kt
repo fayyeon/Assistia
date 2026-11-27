@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import com.powerhold.app.data.RemapAction
 import com.powerhold.app.ui.theme.AppIcons
@@ -110,6 +111,7 @@ fun InstalledAppsTab(
                     context = context,
                     action = action,
                     isSelected = isSelected,
+                    isLandscape = true,
                     onClick = { onSelectAction(action) },
                     onTest = { onTestAction(action) }
                 )
@@ -128,6 +130,7 @@ fun InstalledAppsTab(
                     context = context,
                     action = action,
                     isSelected = isSelected,
+                    isLandscape = false,
                     onClick = { onSelectAction(action) },
                     onTest = { onTestAction(action) }
                 )
@@ -141,6 +144,7 @@ fun AppItemCard(
     context: Context,
     action: RemapAction,
     isSelected: Boolean,
+    isLandscape: Boolean = false,
     onClick: () -> Unit,
     onTest: () -> Unit
 ) {
@@ -157,6 +161,7 @@ fun AppItemCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (isLandscape) Modifier.height(74.dp) else Modifier)
             .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
@@ -170,8 +175,8 @@ fun AppItemCard(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
+                .fillMaxSize()
+                .padding(horizontal = 14.dp, vertical = if (isLandscape) 10.dp else 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
@@ -205,19 +210,22 @@ fun AppItemCard(
                 Text(
                     text = action.title,
                     style = MaterialTheme.typography.titleMedium,
+                    lineHeight = 18.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
+                    maxLines = if (isLandscape) 2 else 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = action.packageName ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (!isLandscape) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = action.packageName ?: "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             Spacer(Modifier.width(8.dp))
