@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
@@ -24,12 +25,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +53,10 @@ fun QuickTogglesTab(
     toggles: List<RemapAction>,
     selectedAction: RemapAction,
     hasAdbPermission: Boolean = false,
+    isAdbBannerDismissed: Boolean = false,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+    onDismissAdbBanner: () -> Unit = {},
+    onMoreInfoAdb: () -> Unit = {},
     onSelectAction: (RemapAction) -> Unit,
     onTestAction: (RemapAction) -> Unit
 ) {
@@ -67,6 +74,7 @@ fun QuickTogglesTab(
         return
     }
 
+    val showBanner = !hasAdbPermission && !isAdbBannerDismissed
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     if (isLandscape) {
@@ -77,6 +85,14 @@ fun QuickTogglesTab(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            if (showBanner) {
+                item(span = { GridItemSpan(maxLineSpan) }, key = "adb_banner") {
+                    AdbWarningBanner(
+                        onDismiss = onDismissAdbBanner,
+                        onMoreInfo = onMoreInfoAdb
+                    )
+                }
+            }
             gridItems(toggles, key = { it.id }) { action ->
                 val isSelected = action.id == selectedAction.id
 
@@ -95,6 +111,14 @@ fun QuickTogglesTab(
             contentPadding = contentPadding,
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            if (showBanner) {
+                item(key = "adb_banner") {
+                    AdbWarningBanner(
+                        onDismiss = onDismissAdbBanner,
+                        onMoreInfo = onMoreInfoAdb
+                    )
+                }
+            }
             items(toggles, key = { it.id }) { action ->
                 val isSelected = action.id == selectedAction.id
 
@@ -111,6 +135,69 @@ fun QuickTogglesTab(
 }
 
 @Composable
+private fun AdbWarningBanner(
+    onDismiss: () -> Unit,
+    onMoreInfo: () -> Unit
+) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val containerColor = if (isDark) Color(0xFF332800) else Color(0xFFFFF3CD)
+    val accentColor = if (isDark) Color(0xFFFFD54F) else Color(0xFF856404)
+    val textColor = if (isDark) Color(0xFFFFECB3) else Color(0xFF5C4600)
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = containerColor,
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 16.dp, top = 18.dp, bottom = 10.dp)
+        ) {
+            Icon(
+                imageVector = AppIcons.InfoOutlined,
+                contentDescription = null,
+                tint = accentColor,
+                modifier = Modifier.size(24.dp)
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            Text(
+                text = "Some actions requires adb to work.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = textColor
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(
+                        text = "Dismiss",
+                        color = accentColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Spacer(Modifier.width(4.dp))
+                TextButton(onClick = onMoreInfo) {
+                    Text(
+                        text = "More Info",
+                        color = accentColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun QuickToggleItemCard(
     action: RemapAction,
     isSelected: Boolean,
@@ -119,21 +206,32 @@ fun QuickToggleItemCard(
     onTest: () -> Unit
 ) {
     val icon = getToggleIcon(action.toggleKey)
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val isDisabled = action.requiresAdb && !hasAdbPermission
+
+    val containerColor = when {
+        isDisabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+        isSelected -> MaterialTheme.colorScheme.primaryContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+
+    val titleColor = when {
+        isDisabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onSurface
+    }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surfaceVariant
-        ),
+            .clickable(enabled = !isDisabled, onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         shape = RoundedCornerShape(20.dp),
-        border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)) else null
+        border = when {
+            isDisabled -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+            !isSelected -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            else -> null
+        }
     ) {
         Row(
             modifier = Modifier
@@ -144,19 +242,21 @@ fun QuickToggleItemCard(
             Surface(
                 modifier = Modifier.size(46.dp),
                 shape = CircleShape,
-                color = if (isSelected)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                color = when {
+                    isDisabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+                    isSelected -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                }
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.onPrimary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = when {
+                            isDisabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            isSelected -> MaterialTheme.colorScheme.onPrimary
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -170,45 +270,21 @@ fun QuickToggleItemCard(
                 Text(
                     text = action.title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                    fontWeight = if (isSelected && !isDisabled) FontWeight.Bold else FontWeight.SemiBold,
+                    color = titleColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // Warning badge for toggles requiring ADB (Task 15)
-                if (action.requiresAdb && !hasAdbPermission) {
-                    Spacer(Modifier.height(4.dp))
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (isDark) Color(0xFF423400) else Color(0xFFFFF3CD),
-                        border = BorderStroke(1.dp, if (isDark) Color(0xFFFFC107).copy(alpha = 0.4f) else Color(0xFFFFC107).copy(alpha = 0.6f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = AppIcons.Warning,
-                                contentDescription = null,
-                                tint = if (isDark) Color(0xFFFFD54F) else Color(0xFF856404),
-                                modifier = Modifier.size(13.dp)
-                            )
-                            Text(
-                                text = "Requires ADB to work properly",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (isDark) Color(0xFFFFD54F) else Color(0xFF856404)
-                            )
-                        }
-                    }
-                } else if (action.subtitle.isNotBlank() && !action.requiresAdb) {
+                if (action.subtitle.isNotBlank() && !action.requiresAdb) {
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = action.subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (isSelected && !isDisabled)
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -218,28 +294,35 @@ fun QuickToggleItemCard(
             Spacer(Modifier.width(8.dp))
 
             RadioButton(
-                selected = isSelected,
+                selected = isSelected && !isDisabled,
+                enabled = !isDisabled,
                 onClick = onClick,
                 colors = RadioButtonDefaults.colors(
-                    selectedColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary,
-                    unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    selectedColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledUnselectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
                 )
             )
-        }
-    }
-}
 
-@Composable
-fun BadgePill(text: String, containerColor: androidx.compose.ui.graphics.Color) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = containerColor
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-        )
+            if (isSelected && !isDisabled) {
+                Spacer(Modifier.width(4.dp))
+                FilledIconButton(
+                    onClick = onTest,
+                    modifier = Modifier.size(36.dp),
+                    shape = CircleShape,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        imageVector = AppIcons.PlayArrow,
+                        contentDescription = "Test Action",
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
     }
 }
 

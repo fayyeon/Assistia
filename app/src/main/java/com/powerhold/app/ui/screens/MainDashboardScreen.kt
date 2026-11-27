@@ -84,6 +84,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -148,6 +149,8 @@ fun MainDashboardScreen(
     var showSearch by remember { mutableStateOf(false) }
     var showAdbDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
+    var isAdbBannerDismissed by rememberSaveable { mutableStateOf(false) }
+    var hasAutoPromptedAssistant by rememberSaveable { mutableStateOf(false) }
 
     val isSystemDark = isSystemInDarkTheme()
     val configuration = LocalConfiguration.current
@@ -170,7 +173,13 @@ fun MainDashboardScreen(
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    LaunchedEffect(Unit) { checkPermissions() }
+    LaunchedEffect(Unit) {
+        checkPermissions()
+        if (!isAssistantSet && !hasAutoPromptedAssistant) {
+            hasAutoPromptedAssistant = true
+            onOpenAssistantSettings()
+        }
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -212,18 +221,6 @@ fun MainDashboardScreen(
         2 -> "Search apps..."
         3 -> "Search activities..."
         else -> "Search..."
-    }
-
-    val testButtonLabel = remember(selectedAction) {
-        when (selectedAction.type) {
-            ActionType.OPEN_APP -> "Test Trigger ${selectedAction.title}"
-            ActionType.LAUNCH_ACTIVITY -> {
-                val appName = selectedAction.subtitle.ifBlank { selectedAction.title }
-                "Test Trigger $appName Activity"
-            }
-            ActionType.QUICK_TOGGLE -> "Test Trigger ${selectedAction.title}"
-            ActionType.OPEN_WEBSITE -> "Test Trigger ${selectedAction.title}"
-        }
     }
 
     LaunchedEffect(showSearch) {
@@ -335,27 +332,31 @@ fun MainDashboardScreen(
                                 start = 16.dp,
                                 end = 16.dp,
                                 top = 8.dp,
-                                bottom = 92.dp
+                                bottom = 80.dp
                             ),
                             quickToggles = quickToggles,
                             apps = apps,
                             activities = activities,
                             selectedAction = selectedAction,
                             hasAdbPermission = hasAdbPermission,
+                            isAdbBannerDismissed = isAdbBannerDismissed,
                             savedWebsiteUrl = savedWebsiteUrl,
                             isLoadingApps = isLoadingApps,
                             isLoadingActivities = isLoadingActivities,
+                            onDismissAdbBanner = { isAdbBannerDismissed = true },
+                            onMoreInfoAdb = { showAdbDialog = true },
                             onSelectAction = { viewModel.selectAction(it) },
                             onTestAction = { viewModel.testAction(context, it) },
                             onOpenThemeDialog = { showThemeDialog = true },
                             onSelectWebsite = { viewModel.selectWebsite(it) },
+                            onTestWebsite = { viewModel.testAction(context) },
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
                         )
                     }
 
-                    // Floating ADB, Search, and Test Trigger buttons (landscape)
+                    // Floating Search button / Search bar (landscape)
                     Column(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -375,18 +376,6 @@ fun MainDashboardScreen(
                             onCloseSearch = { showSearch = false },
                             onHideKeyboard = { keyboardController?.hide() }
                         )
-
-                        // Floating Test Trigger & Set as Assistant row placed below the search button
-                        if (!showSearch) {
-                            Spacer(Modifier.height(10.dp))
-                            FloatingTriggerActionsRow(
-                                testButtonLabel = testButtonLabel,
-                                isAssistantSet = isAssistantSet,
-                                maxTriggerWidth = 340.dp,
-                                onTestAction = { viewModel.testAction(context) },
-                                onOpenAssistantSettings = onOpenAssistantSettings
-                            )
-                        }
                     }
                 }
 
@@ -567,20 +556,24 @@ fun MainDashboardScreen(
                             start = 16.dp,
                             end = 16.dp,
                             top = 8.dp,
-                            bottom = 160.dp
+                            bottom = 128.dp
                         ),
                         quickToggles = quickToggles,
                         apps = apps,
                         activities = activities,
                         selectedAction = selectedAction,
                         hasAdbPermission = hasAdbPermission,
+                        isAdbBannerDismissed = isAdbBannerDismissed,
                         savedWebsiteUrl = savedWebsiteUrl,
                         isLoadingApps = isLoadingApps,
                         isLoadingActivities = isLoadingActivities,
+                        onDismissAdbBanner = { isAdbBannerDismissed = true },
+                        onMoreInfoAdb = { showAdbDialog = true },
                         onSelectAction = { viewModel.selectAction(it) },
                         onTestAction = { viewModel.testAction(context, it) },
                         onOpenThemeDialog = { showThemeDialog = true },
                         onSelectWebsite = { viewModel.selectWebsite(it) },
+                        onTestWebsite = { viewModel.testAction(context) },
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
@@ -628,7 +621,7 @@ fun MainDashboardScreen(
                     }
                 }
 
-                // Floating Search + Test Trigger + Set as Assistant layer (portrait)
+                // Floating Search layer (only moves with keyboard, portrait)
                 val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
                 Column(
                     modifier = Modifier
@@ -649,17 +642,6 @@ fun MainDashboardScreen(
                         onCloseSearch = { showSearch = false },
                         onHideKeyboard = { keyboardController?.hide() }
                     )
-
-                    if (!showSearch && !isImeVisible) {
-                        Spacer(Modifier.height(10.dp))
-                        FloatingTriggerActionsRow(
-                            testButtonLabel = testButtonLabel,
-                            isAssistantSet = isAssistantSet,
-                            maxTriggerWidth = 240.dp,
-                            onTestAction = { viewModel.testAction(context) },
-                            onOpenAssistantSettings = onOpenAssistantSettings
-                        )
-                    }
                 }
             }
         }
@@ -676,13 +658,17 @@ private fun DashboardPager(
     activities: List<com.powerhold.app.data.RemapAction>,
     selectedAction: com.powerhold.app.data.RemapAction,
     hasAdbPermission: Boolean,
+    isAdbBannerDismissed: Boolean,
     savedWebsiteUrl: String,
     isLoadingApps: Boolean,
     isLoadingActivities: Boolean,
+    onDismissAdbBanner: () -> Unit,
+    onMoreInfoAdb: () -> Unit,
     onSelectAction: (com.powerhold.app.data.RemapAction) -> Unit,
     onTestAction: (com.powerhold.app.data.RemapAction) -> Unit,
     onOpenThemeDialog: () -> Unit,
     onSelectWebsite: (String) -> Unit,
+    onTestWebsite: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     HorizontalPager(
@@ -694,15 +680,20 @@ private fun DashboardPager(
                 toggles = quickToggles,
                 selectedAction = selectedAction,
                 hasAdbPermission = hasAdbPermission,
+                isAdbBannerDismissed = isAdbBannerDismissed,
                 contentPadding = tabPadding,
+                onDismissAdbBanner = onDismissAdbBanner,
+                onMoreInfoAdb = onMoreInfoAdb,
                 onSelectAction = onSelectAction,
                 onTestAction = onTestAction
             )
             1 -> WebsiteTab(
                 savedUrl = savedWebsiteUrl,
                 selectedAction = selectedAction,
+                isCurrentPage = pagerState.currentPage == 1,
                 onOpenThemeDialog = onOpenThemeDialog,
-                onSelectWebsite = onSelectWebsite
+                onSelectWebsite = onSelectWebsite,
+                onTestWebsite = onTestWebsite
             )
             2 -> InstalledAppsTab(
                 apps = apps,
@@ -812,78 +803,6 @@ private fun SearchAndAdbControls(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FloatingTriggerActionsRow(
-    testButtonLabel: String,
-    isAssistantSet: Boolean,
-    maxTriggerWidth: androidx.compose.ui.unit.Dp,
-    onTestAction: () -> Unit,
-    onOpenAssistantSettings: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (!isAssistantSet) {
-            Surface(
-                onClick = onOpenAssistantSettings,
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shadowElevation = 6.dp,
-                modifier = Modifier.height(56.dp)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.padding(horizontal = 14.dp)
-                ) {
-                    Text(
-                        text = "Set as Assistant",
-                        maxLines = 1,
-                        fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        Surface(
-            onClick = onTestAction,
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            shadowElevation = 6.dp,
-            modifier = Modifier
-                .height(56.dp)
-                .widthIn(min = 56.dp, max = maxTriggerWidth)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            ) {
-                Icon(
-                    imageVector = AppIcons.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = testButtonLabel,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.labelLarge
-                )
             }
         }
     }

@@ -26,7 +26,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
@@ -228,6 +230,25 @@ fun AppItemCard(
                     unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
+
+            if (isSelected) {
+                Spacer(Modifier.width(4.dp))
+                FilledIconButton(
+                    onClick = onTest,
+                    modifier = Modifier.size(36.dp),
+                    shape = CircleShape,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        imageVector = AppIcons.PlayArrow,
+                        contentDescription = "Test App",
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
         }
     }
 }
